@@ -1,0 +1,150 @@
+:root {
+  --gh-bg: #0b0f0e;
+  --gh-panel: #101412;
+  --gh-border: rgba(255, 255, 255, 0.09);
+  --gh-text: #eef2f0;
+  --gh-muted: #9aa8a3;
+  --gh-teal: #00c896;
+  --gh-teal-dim: #0a3a30;
+  --gh-silver: #788a9e;
+  --gh-green: #3a8a6a;
+  --gh-danger: #e0665a;
+  --gh-radius: 10px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--gh-bg);
+  color: var(--gh-text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, sans-serif;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+input {
+  font-family: inherit;
+}
+
+code {
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 2px 6px;
+  border-radius: 4px;
+  word-break: break-all;
+}
+
+.moduleNotice {
+  padding: 8px 12px;
+  font-size: 12px;
+  background: rgba(0, 200, 150, 0.08);
+  border-bottom: 1px solid var(--gh-border);
+}
+
+.gatehouseLoading {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gh-muted);
+  font-size: 14px;
+}
+
+.gatehouseAuthShell {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.gatehouseAuthCard {
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 28px;
+  background: var(--gh-panel);
+  border: 1px solid var(--gh-border);
+  border-radius: var(--gh-radius);
+}
+
+.gatehouseAuthBrand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 18px;
+  color: var(--gh-teal);
+}
+
+.gatehouseAuthTagline {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--gh-muted);
+}
+
+.gatehouseAuthCard label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--gh-muted);
+}
+
+.gatehouseAuthCard input {
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--gh-border);
+  border-radius: 8px;
+  color: var(--gh-text);
+  font-size: 14px;
+}
+
+.gatehouseAuthCard input:focus {
+  outline: 2px solid var(--gh-teal);
+  outline-offset: 1px;
+}
+
+.gatehouseAuthCard > button[type='submit'] {
+  padding: 11px;
+  background: var(--gh-teal);
+  color: #06231c;
+  border: 0;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.gatehouseAuthMessage {
+  font-size: 12px;
+  color: var(--gh-silver);
+}
+
+.gatehouseAuthSwitch {
+  background: transparent;
+  border: 0;
+  color: var(--gh-silver);
+  font-size: 12px;
+  text-decoration: underline;
+  padding: 0;
+}

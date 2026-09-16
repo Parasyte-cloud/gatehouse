@@ -1,0 +1,491 @@
+.gatehouseBrowser {
+  height: 100vh;
+  display: grid;
+  grid-template-rows: auto auto auto 1fr;
+  background: var(--gh-bg);
+}
+
+.gatehouseChrome {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--gh-border);
+  background: var(--gh-panel);
+}
+
+.gatehouseBrand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: var(--gh-teal);
+  flex: 0 0 auto;
+}
+
+.gatehouseNavButtons,
+.gatehouseActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+.gatehouseNavButtons button,
+.gatehouseActions button {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--gh-text);
+}
+
+.gatehouseNavButtons button:hover:not(:disabled),
+.gatehouseActions button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--gh-border);
+}
+
+.gatehouseOmnibox {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--gh-border);
+  border-radius: 999px;
+}
+
+.gatehouseOmnibox input {
+  flex: 1 1 auto;
+  min-width: 0;
+  background: transparent;
+  border: 0;
+  color: var(--gh-text);
+  font-size: 13px;
+}
+
+.gatehouseOmnibox input:focus {
+  outline: none;
+}
+
+.gatehouseOmnibox button {
+  background: transparent;
+  border: 0;
+  color: var(--gh-muted);
+  display: flex;
+  align-items: center;
+}
+
+.gatehouseSecurityIcon {
+  display: inline-flex;
+  color: var(--gh-teal);
+}
+
+.gatehouseSecurityIcon.blocked,
+.gatehouseSecurityIcon.external {
+  color: var(--gh-silver);
+}
+
+.gatehouseTrustBar {
+  min-height: 30px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--gh-border);
+  background: color-mix(in srgb, var(--gh-panel) 92%, transparent);
+  font-size: 11px;
+  overflow: hidden;
+}
+
+.gatehouseTrustBar strong {
+  flex: 0 0 auto;
+  max-width: 36%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gatehouseTrustBar > span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.68;
+}
+
+.gatehouseTrustDot,
+.gatehouseFrameDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: currentColor;
+  flex: 0 0 auto;
+  color: var(--gh-teal);
+}
+
+.gatehouseTrustDot.external,
+.gatehouseFrameDot.loading,
+.gatehouseFrameDot.slow {
+  color: var(--gh-silver);
+}
+
+.gatehouseTrustDot.blocked,
+.gatehouseFrameDot.failed {
+  color: var(--gh-danger);
+}
+
+.gatehouseBody {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  min-height: 0;
+}
+
+.gatehouseSidebar {
+  border-right: 1px solid var(--gh-border);
+  background: var(--gh-panel);
+  padding: 10px 8px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gatehouseSidebarTitle {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gh-muted);
+  padding: 10px 8px 4px;
+}
+
+.gatehouseSidebar > button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  color: var(--gh-text);
+  font-size: 13px;
+  text-align: left;
+}
+
+.gatehouseSidebar > button:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.gatehouseSiteRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.gatehouseSiteRow > button:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  color: var(--gh-text);
+  font-size: 13px;
+  text-align: left;
+}
+
+.gatehouseSiteRow > button:first-child:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.gatehouseSiteRow > button:first-child span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gatehouseSiteRow button.remove {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: var(--gh-muted);
+  opacity: 0;
+}
+
+.gatehouseSiteRow:hover button.remove {
+  opacity: 1;
+}
+
+.gatehouseSiteRow button.remove:hover {
+  color: var(--gh-danger);
+  background: rgba(224, 102, 90, 0.12);
+}
+
+.gatehouseOriginLabel {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 7px 8px;
+  font-size: 11px;
+  color: var(--gh-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gatehouseEmpty {
+  padding: 6px 8px;
+  font-size: 12px;
+  color: var(--gh-muted);
+}
+
+.gatehouseViewport {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+.gatehouseHome {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--gh-teal);
+}
+
+.gatehouseHome .eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--gh-silver);
+}
+
+.gatehouseHome h2 {
+  max-width: 560px;
+  margin: 0;
+  color: var(--gh-text);
+  font-size: 24px;
+  line-height: 1.3;
+}
+
+.gatehouseHome p {
+  max-width: 480px;
+  margin: 0;
+  color: var(--gh-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.gatehouseHomeSearch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 480px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--gh-border);
+  border-radius: 999px;
+  color: var(--gh-muted);
+}
+
+.gatehouseHomeSearch input {
+  flex: 1 1 auto;
+  background: transparent;
+  border: 0;
+  color: var(--gh-text);
+  font-size: 14px;
+}
+
+.gatehouseHomeSearch input:focus {
+  outline: none;
+}
+
+.gatehouseHomeSearch button {
+  background: var(--gh-teal);
+  color: #06231c;
+  border: 0;
+  border-radius: 999px;
+  padding: 7px 16px;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.gatehouseHomeLinks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  max-width: 560px;
+}
+
+.gatehouseHomeLinks button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--gh-border);
+  border-radius: 999px;
+  color: var(--gh-text);
+  font-size: 12px;
+}
+
+.gatehouseExternalNotice {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--gh-silver);
+}
+
+.gatehouseExternalNotice h3 {
+  margin: 0;
+  color: var(--gh-text);
+}
+
+.gatehouseExternalNotice p {
+  max-width: 440px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.gatehouseBlockedNotice {
+  color: var(--gh-danger);
+}
+
+.gatehouseExternalActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.gatehouseExternalActions button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--gh-border);
+  background: var(--gh-teal);
+  color: #06231c;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.gatehouseExternalActions button.secondary {
+  background: transparent;
+  color: var(--gh-text);
+}
+
+.gatehouseTrustWarning {
+  max-width: 380px;
+  font-size: 11px;
+  opacity: 0.72;
+}
+
+.gatehouseFrameShell {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  overflow: hidden;
+}
+
+.gatehouseFrameShell iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+
+.gatehouseFrameStatus {
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--gh-border);
+  background: color-mix(in srgb, var(--gh-panel) 94%, transparent);
+  font-size: 11px;
+}
+
+.gatehouseFrameStatus > span:nth-child(2) {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gatehouseFrameStatus button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  background: transparent;
+  color: var(--gh-muted);
+  font: inherit;
+}
+
+.gatehouseFrameStatus button:hover {
+  color: var(--gh-text);
+}
+
+.gatehouseFrameFallback {
+  padding: 8px 12px;
+  border-top: 1px solid var(--gh-border);
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--gh-muted);
+}
+
+@media (max-width: 760px) {
+  .gatehouseBody {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+
+  .gatehouseSidebar {
+    border-right: 0;
+    border-bottom: 1px solid var(--gh-border);
+    flex-direction: row;
+    flex-wrap: wrap;
+    max-height: 160px;
+  }
+
+  .gatehouseTrustBar strong {
+    max-width: 48%;
+  }
+
+  .gatehouseTrustBar > span:last-child {
+    display: none;
+  }
+}
