@@ -425,12 +425,6 @@
   color: var(--gh-text);
 }
 
-.gatehouseTrustWarning {
-  max-width: 380px;
-  font-size: 11px;
-  opacity: 0.72;
-}
-
 .gatehouseFrameShell {
   position: relative;
   width: 100%;

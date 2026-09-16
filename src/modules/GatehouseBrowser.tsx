@@ -26,7 +26,6 @@ import ParasyteMark from '../components/ParasyteMark'
 import { supabase } from '../lib/supabase'
 import {
   GATEHOUSE_HOME,
-  buildEmbedOrigins,
   buildStorageTrustedOrigins,
   classifyGatehouseTarget,
   resolveGatehouseInput,
@@ -105,13 +104,6 @@ export default function GatehouseBrowser({ user }: { user: User }) {
     }
   }, [])
 
-  const embedOrigins = useMemo(
-    () => buildEmbedOrigins(
-      trustedOrigins.map(o => o.origin),
-      typeof window === 'undefined' ? undefined : window.location.origin
-    ),
-    [trustedOrigins]
-  )
   const storageTrustedOrigins = useMemo(
     () => buildStorageTrustedOrigins(
       trustedOrigins.filter(o => o.allow_same_origin).map(o => o.origin)
@@ -120,8 +112,8 @@ export default function GatehouseBrowser({ user }: { user: User }) {
   )
 
   const currentPolicy = useMemo(
-    () => classifyGatehouseTarget(current, { embedOrigins, storageTrustedOrigins }),
-    [current, embedOrigins, storageTrustedOrigins]
+    () => classifyGatehouseTarget(current, { storageTrustedOrigins }),
+    [current, storageTrustedOrigins]
   )
 
   const loadData = useCallback(async () => {
@@ -312,7 +304,7 @@ export default function GatehouseBrowser({ user }: { user: User }) {
       const { error } = await client
         .from('gatehouse_trusted_origins')
         .upsert(
-          { user_id: user.id, origin: parsed.origin, allow_same_origin: false },
+          { user_id: user.id, origin: parsed.origin, allow_same_origin: true },
           { onConflict: 'user_id,origin' }
         )
       if (error) throw error
@@ -349,12 +341,10 @@ export default function GatehouseBrowser({ user }: { user: User }) {
   const securityTitle = currentPolicy.kind === 'home'
     ? 'PArAsYtE home'
     : currentPolicy.kind === 'embed'
-      ? 'Origin you trust for embedding'
+      ? (currentPolicy.allowSameOrigin ? 'Embedded - remembers its own session' : 'Embedded, sandboxed (no persistent session)')
       : currentPolicy.kind === 'blocked'
         ? 'Blocked destination'
-        : currentPolicy.secure
-          ? 'HTTPS site opens in a separate tab'
-          : 'Insecure HTTP site is not embedded'
+        : 'Insecure HTTP - opens in a separate tab'
 
   return (
     <section className="gatehouseBrowser" data-policy={currentPolicy.kind}>
@@ -486,7 +476,7 @@ export default function GatehouseBrowser({ user }: { user: User }) {
 
           {trustedOrigins.length > 0 && (
             <>
-              <div className="gatehouseSidebarTitle">Trusted for embedding</div>
+              <div className="gatehouseSidebarTitle">Keeps its own session</div>
               {trustedOrigins.map(origin => (
                 <div className="gatehouseSiteRow" key={origin.id}>
                   <span className="gatehouseOriginLabel">{origin.origin}</span>
@@ -494,8 +484,8 @@ export default function GatehouseBrowser({ user }: { user: User }) {
                     type="button"
                     className="remove"
                     onClick={() => void untrustOrigin(origin.id)}
-                    title="Stop trusting this origin"
-                    aria-label={`Stop trusting ${origin.origin}`}
+                    title="Stop remembering this origin's session"
+                    aria-label={`Stop remembering ${origin.origin}`}
                   >
                     <Trash2 size={12} />
                   </button>
@@ -512,11 +502,12 @@ export default function GatehouseBrowser({ user }: { user: User }) {
               <span className="eyebrow">A CLEANER WEB, TOGETHER</span>
               <h2>Open what you trust. Nothing else gets in, and nothing sticks around.</h2>
               <p>
-                Save sites, trust the ones you want embedded here, and search the web.
-                Anything you haven't explicitly trusted opens in its own separate tab.
-                Everything else - browsing history, pop-ups, redirects out of this tab -
-                is blocked by default, and nothing is remembered between visits unless
-                you explicitly save it.
+                Type an address and it opens right here, sandboxed, whatever it is -
+                there's no separate "allowed to embed" list gating that. The only
+                thing trusting an origin does is let it keep its own session between
+                visits; that's optional and off by default. History, pop-ups, and
+                redirects out of this tab are blocked regardless, and nothing is
+                remembered between visits unless you explicitly save it.
               </p>
 
               <form className="gatehouseHomeSearch" onSubmit={submit}>
@@ -552,11 +543,12 @@ export default function GatehouseBrowser({ user }: { user: User }) {
             </div>
           ) : currentPolicy.kind === 'external' ? (
             <div className="gatehouseExternalNotice">
-              {currentPolicy.secure ? <ShieldCheck size={30} /> : <ShieldAlert size={30} />}
-              <h3>Open in a separate tab</h3>
+              <ShieldAlert size={30} />
+              <h3>Can't embed insecure pages</h3>
               <p>
-                PArAsYtE does not weaken another website's frame protections. This origin
-                isn't on your trusted list, so it opens outside the frame.
+                This address is plain HTTP, not HTTPS. Browsers block insecure
+                content inside an HTTPS app like PArAsYtE outright (mixed-content
+                blocking) - there's no way around that from here.
               </p>
               <code>{current}</code>
               <div className="gatehouseExternalActions">
@@ -564,32 +556,19 @@ export default function GatehouseBrowser({ user }: { user: User }) {
                   <ExternalLink size={16} />
                   Open in a tab
                 </button>
-                {currentPolicy.secure && (
-                  <button type="button" className="secondary" onClick={() => void trustCurrentOrigin()}>
-                    <Plus size={16} />
-                    Trust this origin
-                  </button>
-                )}
                 <button type="button" className="secondary" onClick={goHome}>
                   <Home size={16} />
                   Home
                 </button>
               </div>
-              {currentPolicy.secure && (
-                <p className="gatehouseTrustWarning">
-                  Only trust origins you control or fully trust. A trusted origin runs with
-                  scripts enabled inside PArAsYtE. Pop-ups and any attempt to redirect this
-                  tab are always blocked, even for origins you trust.
-                </p>
-              )}
             </div>
           ) : (
             <div className="gatehouseFrameShell">
               <div className="gatehouseFrameStatus" aria-live="polite">
                 <span className={`gatehouseFrameDot ${frameStatus}`} />
                 <span>
-                  {frameStatus === 'loading' && 'Loading trusted site...'}
-                  {frameStatus === 'ready' && 'Trusted site loaded'}
+                  {frameStatus === 'loading' && 'Loading...'}
+                  {frameStatus === 'ready' && (currentPolicy.allowSameOrigin ? 'Loaded - session remembered here' : 'Loaded (sandboxed)')}
                   {frameStatus === 'slow' && 'This site is taking longer than expected'}
                   {frameStatus === 'failed' && 'The embedded site could not be loaded'}
                   {frameStatus === 'idle' && 'Ready'}
@@ -598,6 +577,16 @@ export default function GatehouseBrowser({ user }: { user: User }) {
                   <button type="button" onClick={() => setReloadKey(v => v + 1)}>
                     <RefreshCw size={13} />
                     Retry
+                  </button>
+                )}
+                {!currentPolicy.allowSameOrigin && (
+                  <button
+                    type="button"
+                    onClick={() => void trustCurrentOrigin()}
+                    title="Only do this for a site you fully trust - it lets that site's scripts read and write its own storage and cookies while embedded."
+                  >
+                    <Plus size={13} />
+                    Keep me signed in here
                   </button>
                 )}
                 <button type="button" onClick={openCurrentExternal}>
@@ -610,7 +599,9 @@ export default function GatehouseBrowser({ user }: { user: User }) {
                 - allow-forms, allow-scripts: the origin needs these to function.
                 - allow-same-origin: only ever added when currentPolicy.allowSameOrigin
                   is true, i.e. the user explicitly opted this origin into storage
-                  trust (see policy.ts). Never granted by default.
+                  trust (see policy.ts). Never granted by default, and unrelated to
+                  whether the origin gets embedded at all - every secure, non-private
+                  destination embeds regardless of this flag.
                 - allow-popups is intentionally NEVER included. Without it, an
                   embedded page's window.open() and target="_blank" links are
                   silently blocked - no popups, full stop, even for trusted origins.
@@ -620,7 +611,8 @@ export default function GatehouseBrowser({ user }: { user: User }) {
                 - allow-top-navigation / allow-top-navigation-by-user-activation are
                   also intentionally NEVER included. Without them, nothing an
                   embedded page runs can redirect this tab or navigate the parent
-                  frame - that's what keeps everything embedded staying embedded.
+                  frame - that's what keeps everything embedded staying embedded,
+                  even now that embedding itself is no longer gated by trust.
                   Do not add either flag; that reopens the exact redirect/breakout
                   surface this app exists to close.
               */}
@@ -640,8 +632,10 @@ export default function GatehouseBrowser({ user }: { user: User }) {
               />
               {(frameStatus === 'slow' || frameStatus === 'failed') && (
                 <div className="gatehouseFrameFallback">
-                  If the page is blank, its server may block framing. Open it outside PArAsYtE
-                  rather than weakening the site's security policy.
+                  If the page is blank, its server may still refuse to be framed at
+                  all (X-Frame-Options / frame-ancestors) - that's the site's own
+                  server-side decision and nothing on this end can override it.
+                  Open it outside PArAsYtE instead.
                 </div>
               )}
             </div>
