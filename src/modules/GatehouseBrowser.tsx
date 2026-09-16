@@ -283,6 +283,14 @@ export default function GatehouseBrowser({ user }: { user: User }) {
     if (current === GATEHOUSE_HOME) return
     const parsed = safeWebUrl(current)
     if (!parsed) return
+    // Inside the desktop shell (see /desktop), hand this to the OS's real
+    // default browser via Electron's shell.openExternal. On the plain web
+    // build window.electronAPI is undefined, so this falls back to the
+    // same window.open() behavior as before.
+    if (window.electronAPI) {
+      window.electronAPI.openExternal(parsed.toString())
+      return
+    }
     window.open(parsed.toString(), '_blank', 'noopener,noreferrer')
   }
 
