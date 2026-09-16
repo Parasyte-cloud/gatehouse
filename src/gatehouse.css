@@ -1,15 +1,19 @@
 :root {
-  --gh-bg: #0b0f0e;
-  --gh-panel: #101412;
-  --gh-border: rgba(255, 255, 255, 0.09);
+  --gh-bg: #06080a;
+  --gh-panel: #0e1216;
+  --gh-border: rgba(255, 255, 255, 0.14);
   --gh-text: #eef2f0;
   --gh-muted: #9aa8a3;
-  --gh-teal: #00c896;
-  --gh-teal-dim: #0a3a30;
-  --gh-silver: #788a9e;
-  --gh-green: #3a8a6a;
+  --gh-gold: #f2a93b;
+  --gh-gold-strong: #ffcf7a;
+  --gh-gold-dim: rgba(242, 169, 59, 0.16);
+  --gh-silver: #a7b4c2;
+  --gh-blue: #3f7fd1;
   --gh-danger: #e0665a;
-  --gh-radius: 10px;
+  --gh-radius: 14px;
+  --gh-glass-bg: rgba(18, 22, 26, 0.55);
+  --gh-glass-bg-strong: rgba(14, 18, 22, 0.72);
+  --gh-glass-blur: blur(20px) saturate(150%);
 }
 
 * {
@@ -24,7 +28,11 @@ body,
 
 body {
   margin: 0;
-  background: var(--gh-bg);
+  background:
+    radial-gradient(1200px 800px at 12% 10%, rgba(242, 169, 59, 0.16), transparent 60%),
+    radial-gradient(1000px 750px at 88% 18%, rgba(63, 127, 209, 0.16), transparent 55%),
+    radial-gradient(900px 900px at 50% 105%, rgba(167, 180, 194, 0.10), transparent 60%),
+    var(--gh-bg);
   color: var(--gh-text);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, sans-serif;
 }
@@ -54,7 +62,7 @@ code {
 .moduleNotice {
   padding: 8px 12px;
   font-size: 12px;
-  background: rgba(0, 200, 150, 0.08);
+  background: var(--gh-gold-dim);
   border-bottom: 1px solid var(--gh-border);
 }
 
@@ -77,14 +85,17 @@ code {
 
 .gatehouseAuthCard {
   width: 100%;
-  max-width: 360px;
+  max-width: 380px;
   display: flex;
   flex-direction: column;
   gap: 14px;
-  padding: 28px;
-  background: var(--gh-panel);
+  padding: 32px 28px;
+  background: var(--gh-glass-bg);
+  backdrop-filter: var(--gh-glass-blur);
+  -webkit-backdrop-filter: var(--gh-glass-blur);
   border: 1px solid var(--gh-border);
   border-radius: var(--gh-radius);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .gatehouseAuthBrand {
@@ -92,8 +103,22 @@ code {
   align-items: center;
   gap: 8px;
   font-weight: 600;
-  font-size: 18px;
-  color: var(--gh-teal);
+  font-size: 19px;
+  color: var(--gh-gold-strong);
+}
+
+.gatehouseAuthBrandSuffix {
+  font-weight: 400;
+  color: var(--gh-text);
+  opacity: 0.85;
+}
+
+.gatehouseAuthEyebrow {
+  margin: -6px 0 0;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gh-silver);
 }
 
 .gatehouseAuthTagline {
@@ -113,26 +138,27 @@ code {
 
 .gatehouseAuthCard input {
   padding: 10px 12px;
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--gh-border);
-  border-radius: 8px;
+  border-radius: 10px;
   color: var(--gh-text);
   font-size: 14px;
 }
 
 .gatehouseAuthCard input:focus {
-  outline: 2px solid var(--gh-teal);
+  outline: 2px solid var(--gh-gold);
   outline-offset: 1px;
 }
 
 .gatehouseAuthCard > button[type='submit'] {
   padding: 11px;
-  background: var(--gh-teal);
-  color: #06231c;
+  background: linear-gradient(135deg, var(--gh-gold-strong), var(--gh-gold));
+  color: #2b1a02;
   border: 0;
-  border-radius: 8px;
+  border-radius: 10px;
   font-weight: 600;
   font-size: 14px;
+  box-shadow: 0 10px 24px rgba(242, 169, 59, 0.25);
 }
 
 .gatehouseAuthMessage {

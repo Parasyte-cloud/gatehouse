@@ -38,7 +38,7 @@ export default function App() {
   if (user === undefined) {
     return (
       <div className="gatehouseLoading" role="status">
-        Loading Gatehouse...
+        Loading PArAsYtE...
       </div>
     )
   }
@@ -46,7 +46,7 @@ export default function App() {
   if (!supabase) {
     return (
       <div className="gatehouseLoading" role="status">
-        Gatehouse is not configured yet. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.
+        PArAsYtE is not configured yet. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.
       </div>
     )
   }

@@ -22,6 +22,7 @@ import {
   Trash2
 } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
+import ParasyteMark from '../components/ParasyteMark'
 import { supabase } from '../lib/supabase'
 import {
   GATEHOUSE_HOME,
@@ -69,7 +70,7 @@ function safeMessage(action: 'load' | 'save' | 'remove' | 'trust' | 'untrust'): 
     case 'untrust':
       return 'Unable to remove this trusted origin. Please try again.'
     default:
-      return 'Unable to load your Gatehouse data. Please refresh or sign in again.'
+      return 'Unable to load your PArAsYtE data. Please refresh or sign in again.'
   }
 }
 
@@ -86,6 +87,17 @@ export default function GatehouseBrowser({ user }: { user: User }) {
   const addressRef = useRef<HTMLInputElement>(null)
   const mountedRef = useRef(true)
 
+  // In-memory only, by design: `history` (the back/forward stack, above) and
+  // everything else on this page except `sites` and `trustedOrigins` lives in
+  // React state and nowhere else. Nothing here ever touches localStorage,
+  // sessionStorage, or a cookie. Closing the tab or reloading wipes it -
+  // that's the whole "acts like incognito unless you save it" promise. The
+  // only durable state a user has is what they explicitly starred (`sites`)
+  // or explicitly trusted (`trustedOrigins`), both one row per user in
+  // Supabase, both delete-able from the sidebar. Do not add any client-side
+  // persistence for browsing state without changing this comment - a future
+  // "let's cache the history for convenience" is exactly the feature this
+  // product's whole pitch says it doesn't have.
   useEffect(() => {
     mountedRef.current = true
     return () => {
@@ -145,7 +157,7 @@ export default function GatehouseBrowser({ user }: { user: User }) {
       setSites((sitesResult.data || []) as Site[])
       setTrustedOrigins((originsResult.data || []) as TrustedOrigin[])
     } catch (error) {
-      console.error('Gatehouse data load failed:', error)
+      console.error('PArAsYtE data load failed:', error)
       if (mountedRef.current) {
         setMessage(safeMessage('load'))
       }
@@ -268,7 +280,7 @@ export default function GatehouseBrowser({ user }: { user: User }) {
       if (mountedRef.current) setMessage('Site saved.')
       await loadData()
     } catch (error) {
-      console.error('Gatehouse site save failed:', error)
+      console.error('PArAsYtE site save failed:', error)
       if (mountedRef.current) setMessage(safeMessage('save'))
     }
   }
@@ -285,7 +297,7 @@ export default function GatehouseBrowser({ user }: { user: User }) {
       if (error) throw error
       await loadData()
     } catch (error) {
-      console.error('Gatehouse site remove failed:', error)
+      console.error('PArAsYtE site remove failed:', error)
       if (mountedRef.current) setMessage(safeMessage('remove'))
     }
   }
@@ -306,7 +318,7 @@ export default function GatehouseBrowser({ user }: { user: User }) {
       if (error) throw error
       await loadData()
     } catch (error) {
-      console.error('Gatehouse trust origin failed:', error)
+      console.error('PArAsYtE trust origin failed:', error)
       if (mountedRef.current) setMessage(safeMessage('trust'))
     }
   }
@@ -323,7 +335,7 @@ export default function GatehouseBrowser({ user }: { user: User }) {
       if (error) throw error
       await loadData()
     } catch (error) {
-      console.error('Gatehouse untrust origin failed:', error)
+      console.error('PArAsYtE untrust origin failed:', error)
       if (mountedRef.current) setMessage(safeMessage('untrust'))
     }
   }
@@ -335,7 +347,7 @@ export default function GatehouseBrowser({ user }: { user: User }) {
   const favorites = useMemo(() => sites.filter(site => site.is_favorite), [sites])
 
   const securityTitle = currentPolicy.kind === 'home'
-    ? 'Gatehouse home'
+    ? 'PArAsYtE home'
     : currentPolicy.kind === 'embed'
       ? 'Origin you trust for embedding'
       : currentPolicy.kind === 'blocked'
@@ -348,8 +360,11 @@ export default function GatehouseBrowser({ user }: { user: User }) {
     <section className="gatehouseBrowser" data-policy={currentPolicy.kind}>
       <div className="gatehouseChrome">
         <div className="gatehouseBrand">
-          <ShieldCheck size={18} />
-          <span>Gatehouse</span>
+          <ParasyteMark size={20} />
+          <span>
+            PArAsYtE
+            <span className="gatehouseBrandSuffix"> Browser</span>
+          </span>
         </div>
 
         <div className="gatehouseNavButtons">
@@ -428,7 +443,7 @@ export default function GatehouseBrowser({ user }: { user: User }) {
       <div className="gatehouseTrustBar" aria-live="polite">
         <span className={`gatehouseTrustDot ${currentPolicy.kind}`} />
         <strong>
-          {currentPolicy.kind === 'home' ? 'Gatehouse' : currentPolicy.hostname || 'Blocked address'}
+          {currentPolicy.kind === 'home' ? 'PArAsYtE' : currentPolicy.hostname || 'Blocked address'}
         </strong>
         <span>{currentPolicy.reason}</span>
       </div>
@@ -493,12 +508,15 @@ export default function GatehouseBrowser({ user }: { user: User }) {
         <main className="gatehouseViewport">
           {currentPolicy.kind === 'home' ? (
             <div className="gatehouseHome">
-              <ShieldCheck size={40} />
-              <span className="eyebrow">GATEHOUSE</span>
-              <h2>Open what you trust. Everything else waits at the door.</h2>
+              <ParasyteMark size={48} />
+              <span className="eyebrow">A CLEANER WEB, TOGETHER</span>
+              <h2>Open what you trust. Nothing else gets in, and nothing sticks around.</h2>
               <p>
                 Save sites, trust the ones you want embedded here, and search the web.
-                Anything you haven't explicitly trusted opens in its own separate tab instead.
+                Anything you haven't explicitly trusted opens in its own separate tab.
+                Everything else - browsing history, pop-ups, redirects out of this tab -
+                is blocked by default, and nothing is remembered between visits unless
+                you explicitly save it.
               </p>
 
               <form className="gatehouseHomeSearch" onSubmit={submit}>
@@ -537,7 +555,7 @@ export default function GatehouseBrowser({ user }: { user: User }) {
               {currentPolicy.secure ? <ShieldCheck size={30} /> : <ShieldAlert size={30} />}
               <h3>Open in a separate tab</h3>
               <p>
-                Gatehouse does not weaken another website's frame protections. This origin
+                PArAsYtE does not weaken another website's frame protections. This origin
                 isn't on your trusted list, so it opens outside the frame.
               </p>
               <code>{current}</code>
@@ -560,7 +578,8 @@ export default function GatehouseBrowser({ user }: { user: User }) {
               {currentPolicy.secure && (
                 <p className="gatehouseTrustWarning">
                   Only trust origins you control or fully trust. A trusted origin runs with
-                  scripts and popups enabled inside Gatehouse.
+                  scripts enabled inside PArAsYtE. Pop-ups and any attempt to redirect this
+                  tab are always blocked, even for origins you trust.
                 </p>
               )}
             </div>
@@ -586,15 +605,34 @@ export default function GatehouseBrowser({ user }: { user: User }) {
                   Open outside
                 </button>
               </div>
+              {/*
+                Sandbox flags, deliberately minimal:
+                - allow-forms, allow-scripts: the origin needs these to function.
+                - allow-same-origin: only ever added when currentPolicy.allowSameOrigin
+                  is true, i.e. the user explicitly opted this origin into storage
+                  trust (see policy.ts). Never granted by default.
+                - allow-popups is intentionally NEVER included. Without it, an
+                  embedded page's window.open() and target="_blank" links are
+                  silently blocked - no popups, full stop, even for trusted origins.
+                  Trade-off worth knowing: some sites' "Sign in with Google/Microsoft"
+                  flows use a popup and will not work here. If that ever needs to
+                  change, it should be a per-origin opt-in, not a global default.
+                - allow-top-navigation / allow-top-navigation-by-user-activation are
+                  also intentionally NEVER included. Without them, nothing an
+                  embedded page runs can redirect this tab or navigate the parent
+                  frame - that's what keeps everything embedded staying embedded.
+                  Do not add either flag; that reopens the exact redirect/breakout
+                  surface this app exists to close.
+              */}
               <iframe
                 key={`${current}-${reloadKey}`}
-                title="Gatehouse browser view"
+                title="PArAsYtE browser view"
                 src={current}
                 referrerPolicy="no-referrer"
                 sandbox={
                   currentPolicy.allowSameOrigin
-                    ? 'allow-forms allow-scripts allow-popups allow-same-origin'
-                    : 'allow-forms allow-scripts allow-popups'
+                    ? 'allow-forms allow-scripts allow-same-origin'
+                    : 'allow-forms allow-scripts'
                 }
                 allow="camera 'none'; microphone 'none'; geolocation 'none'; payment 'none'; usb 'none'; serial 'none'; hid 'none'; clipboard-read 'none'; clipboard-write 'none'"
                 onLoad={() => setFrameStatus('ready')}
@@ -602,7 +640,7 @@ export default function GatehouseBrowser({ user }: { user: User }) {
               />
               {(frameStatus === 'slow' || frameStatus === 'failed') && (
                 <div className="gatehouseFrameFallback">
-                  If the page is blank, its server may block framing. Open it outside Gatehouse
+                  If the page is blank, its server may block framing. Open it outside PArAsYtE
                   rather than weakening the site's security policy.
                 </div>
               )}

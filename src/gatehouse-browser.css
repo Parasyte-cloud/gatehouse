@@ -2,16 +2,18 @@
   height: 100vh;
   display: grid;
   grid-template-rows: auto auto auto 1fr;
-  background: var(--gh-bg);
+  background: transparent;
 }
 
 .gatehouseChrome {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 12px;
+  padding: 10px 14px;
   border-bottom: 1px solid var(--gh-border);
-  background: var(--gh-panel);
+  background: var(--gh-glass-bg);
+  backdrop-filter: var(--gh-glass-blur);
+  -webkit-backdrop-filter: var(--gh-glass-blur);
 }
 
 .gatehouseBrand {
@@ -19,8 +21,14 @@
   align-items: center;
   gap: 6px;
   font-weight: 600;
-  color: var(--gh-teal);
+  color: var(--gh-gold-strong);
   flex: 0 0 auto;
+}
+
+.gatehouseBrandSuffix {
+  font-weight: 400;
+  color: var(--gh-text);
+  opacity: 0.8;
 }
 
 .gatehouseNavButtons,
@@ -40,13 +48,13 @@
   justify-content: center;
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: 10px;
   color: var(--gh-text);
 }
 
 .gatehouseNavButtons button:hover:not(:disabled),
 .gatehouseActions button:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.08);
   border-color: var(--gh-border);
 }
 
@@ -56,9 +64,11 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0 10px;
-  height: 36px;
-  background: rgba(255, 255, 255, 0.04);
+  padding: 0 12px;
+  height: 38px;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border: 1px solid var(--gh-border);
   border-radius: 999px;
 }
@@ -86,7 +96,7 @@
 
 .gatehouseSecurityIcon {
   display: inline-flex;
-  color: var(--gh-teal);
+  color: var(--gh-gold);
 }
 
 .gatehouseSecurityIcon.blocked,
@@ -95,13 +105,15 @@
 }
 
 .gatehouseTrustBar {
-  min-height: 30px;
+  min-height: 32px;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 12px;
+  padding: 6px 14px;
   border-bottom: 1px solid var(--gh-border);
-  background: color-mix(in srgb, var(--gh-panel) 92%, transparent);
+  background: var(--gh-glass-bg);
+  backdrop-filter: var(--gh-glass-blur);
+  -webkit-backdrop-filter: var(--gh-glass-blur);
   font-size: 11px;
   overflow: hidden;
 }
@@ -129,7 +141,7 @@
   border-radius: 999px;
   background: currentColor;
   flex: 0 0 auto;
-  color: var(--gh-teal);
+  color: var(--gh-gold);
 }
 
 .gatehouseTrustDot.external,
@@ -145,14 +157,16 @@
 
 .gatehouseBody {
   display: grid;
-  grid-template-columns: 220px 1fr;
+  grid-template-columns: 230px 1fr;
   min-height: 0;
 }
 
 .gatehouseSidebar {
   border-right: 1px solid var(--gh-border);
-  background: var(--gh-panel);
-  padding: 10px 8px;
+  background: var(--gh-glass-bg);
+  backdrop-filter: var(--gh-glass-blur);
+  -webkit-backdrop-filter: var(--gh-glass-blur);
+  padding: 12px 8px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -181,7 +195,7 @@
 }
 
 .gatehouseSidebar > button:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .gatehouseSiteRow {
@@ -206,7 +220,7 @@
 }
 
 .gatehouseSiteRow > button:first-child:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .gatehouseSiteRow > button:first-child span {
@@ -235,7 +249,7 @@
 
 .gatehouseSiteRow button.remove:hover {
   color: var(--gh-danger);
-  background: rgba(224, 102, 90, 0.12);
+  background: rgba(224, 102, 90, 0.14);
 }
 
 .gatehouseOriginLabel {
@@ -270,12 +284,12 @@
   gap: 12px;
   padding: 40px 20px;
   text-align: center;
-  color: var(--gh-teal);
+  color: var(--gh-gold);
 }
 
 .gatehouseHome .eyebrow {
   font-size: 11px;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.18em;
   color: var(--gh-silver);
 }
 
@@ -302,10 +316,13 @@
   width: 100%;
   max-width: 480px;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--gh-glass-bg);
+  backdrop-filter: var(--gh-glass-blur);
+  -webkit-backdrop-filter: var(--gh-glass-blur);
   border: 1px solid var(--gh-border);
   border-radius: 999px;
   color: var(--gh-muted);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
 }
 
 .gatehouseHomeSearch input {
@@ -321,8 +338,8 @@
 }
 
 .gatehouseHomeSearch button {
-  background: var(--gh-teal);
-  color: #06231c;
+  background: linear-gradient(135deg, var(--gh-gold-strong), var(--gh-gold));
+  color: #2b1a02;
   border: 0;
   border-radius: 999px;
   padding: 7px 16px;
@@ -343,7 +360,9 @@
   align-items: center;
   gap: 6px;
   padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border: 1px solid var(--gh-border);
   border-radius: 999px;
   color: var(--gh-text);
@@ -393,14 +412,16 @@
   padding: 9px 14px;
   border-radius: 999px;
   border: 1px solid var(--gh-border);
-  background: var(--gh-teal);
-  color: #06231c;
+  background: linear-gradient(135deg, var(--gh-gold-strong), var(--gh-gold));
+  color: #2b1a02;
   font-weight: 600;
   font-size: 13px;
 }
 
 .gatehouseExternalActions button.secondary {
-  background: transparent;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   color: var(--gh-text);
 }
 
@@ -433,7 +454,9 @@
   gap: 8px;
   padding: 6px 10px;
   border-bottom: 1px solid var(--gh-border);
-  background: color-mix(in srgb, var(--gh-panel) 94%, transparent);
+  background: var(--gh-glass-bg);
+  backdrop-filter: var(--gh-glass-blur);
+  -webkit-backdrop-filter: var(--gh-glass-blur);
   font-size: 11px;
 }
 

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { ShieldCheck } from 'lucide-react'
+import ParasyteMark from '../components/ParasyteMark'
 import { supabase } from '../lib/supabase'
 import '../gatehouse.css'
 
@@ -17,7 +17,7 @@ export default function AuthScreen() {
     event.preventDefault()
     const client = supabase
     if (!client) {
-      setMessage('Gatehouse is not configured yet (missing Supabase env vars).')
+      setMessage('PArAsYtE is not configured yet (missing Supabase env vars).')
       return
     }
 
@@ -38,7 +38,7 @@ export default function AuthScreen() {
         setMessage('Check your email to confirm your account, then sign in.')
       }
     } catch (error) {
-      console.error('Gatehouse auth failed:', error)
+      console.error('PArAsYtE auth failed:', error)
       setMessage(
         mode === 'sign-in'
           ? 'Could not sign in. Check your email and password and try again.'
@@ -53,12 +53,17 @@ export default function AuthScreen() {
     <div className="gatehouseAuthShell">
       <form className="gatehouseAuthCard" onSubmit={event => void submit(event)}>
         <div className="gatehouseAuthBrand">
-          <ShieldCheck size={22} />
-          <span>Gatehouse</span>
+          <ParasyteMark size={26} />
+          <span>
+            PArAsYtE
+            <span className="gatehouseAuthBrandSuffix"> Browser</span>
+          </span>
         </div>
+        <span className="gatehouseAuthEyebrow">A cleaner web, together</span>
         <p className="gatehouseAuthTagline">
-          A browsing surface that opens what you trust, and keeps everything else
-          at arm's length in its own tab.
+          Nothing is kept unless you save it. Opens what you trust, keeps everything
+          else at arm's length in its own tab - no history, no pop-ups, no redirects
+          out of this tab.
         </p>
 
         <label>
