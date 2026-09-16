@@ -1,20 +1,17 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { ArrowRight, Eye, EyeOff, LockKeyhole, ShieldCheck } from 'lucide-react'
 import ParasyteMark from '../components/ParasyteMark'
+import ParasyteScene from '../components/ParasyteScene'
 import { supabase } from '../lib/supabase'
 import '../gatehouse.css'
 
-// Shown when App.tsx sees Supabase's PASSWORD_RECOVERY auth event, which
-// fires when a user opens the link from a "reset your password" email.
-// That click carries a short-lived recovery session that's real enough to
-// call updateUser with - once it succeeds, App.tsx's normal onAuthStateChange
-// listener already has a full session and `onDone` just lets the regular
-// user-based routing in App.tsx take back over.
 export default function ResetPasswordScreen({ onDone }: { onDone: () => void }) {
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
@@ -51,42 +48,66 @@ export default function ResetPasswordScreen({ onDone }: { onDone: () => void }) 
 
   return (
     <div className="gatehouseAuthShell">
-      <form className="gatehouseAuthCard" onSubmit={event => void submit(event)}>
-        <div className="gatehouseAuthBrand">
-          <ParasyteMark size={26} />
-          <span>
-            PArAsYtE
-            <span className="gatehouseAuthBrandSuffix"> Browser</span>
-          </span>
-        </div>
-        <p className="gatehouseAuthTagline">Choose a new password for your account.</p>
+      <ParasyteScene className="gatehouseAuthScene" />
 
-        <label>
-          New password
+      <form className="gatehouseAuthCard gatehouseResetCard" onSubmit={event => void submit(event)}>
+        <div className="gatehouseAuthBrandBlock">
+          <div className="gatehouseAuthLogoHalo">
+            <ParasyteMark size={68} />
+          </div>
+          <div className="gatehouseAuthBrand">
+            <span>PArAsYtE</span>
+            <span className="gatehouseAuthBrandSuffix"> Browser</span>
+          </div>
+          <span className="gatehouseAuthEyebrow">SECURE ACCOUNT RECOVERY</span>
+        </div>
+
+        <div className="gatehouseAuthIntro">
+          <h1>Choose a new password</h1>
+          <p>Set a strong password for your PArAsYtE account.</p>
+        </div>
+
+        <label className="gatehouseFieldLabel" htmlFor="new-password">New password</label>
+        <div className="gatehouseAuthField">
+          <LockKeyhole size={19} aria-hidden="true" />
           <input
-            type="password"
+            id="new-password"
+            type={showPassword ? 'text' : 'password'}
             required
             minLength={8}
             autoComplete="new-password"
+            placeholder="New password"
             value={password}
             onChange={event => setPassword(event.target.value)}
           />
-        </label>
+          <button
+            type="button"
+            className="gatehousePasswordToggle"
+            aria-label={showPassword ? 'Hide password' : 'Show password'}
+            onClick={() => setShowPassword(value => !value)}
+          >
+            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+          </button>
+        </div>
 
-        <label>
-          Confirm password
+        <label className="gatehouseFieldLabel" htmlFor="confirm-password">Confirm password</label>
+        <div className="gatehouseAuthField">
+          <ShieldCheck size={19} aria-hidden="true" />
           <input
-            type="password"
+            id="confirm-password"
+            type={showPassword ? 'text' : 'password'}
             required
             minLength={8}
             autoComplete="new-password"
+            placeholder="Confirm password"
             value={confirm}
             onChange={event => setConfirm(event.target.value)}
           />
-        </label>
+        </div>
 
-        <button type="submit" disabled={busy}>
-          Update password
+        <button className="gatehouseAuthPrimary" type="submit" disabled={busy}>
+          <span>Update Password</span>
+          <ArrowRight size={18} />
         </button>
 
         {message && <div className="gatehouseAuthMessage" role="status">{message}</div>}

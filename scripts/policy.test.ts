@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
   GATEHOUSE_HOME,
+  buildEmbedOrigins,
   buildSearchUrl,
   buildStorageTrustedOrigins,
   classifyGatehouseTarget,
@@ -67,43 +68,59 @@ test('bracketed IPv4-mapped IPv6 addresses are blocked end-to-end via the URL pa
     'http://[::192.168.1.1]/',
     'http://[64:ff9b::10.0.0.5]/'
   ]) {
-    const policy = classifyGatehouseTarget(url)
+    const policy = classifyGatehouseTarget(url, { embedOrigins: new Set() })
     assert.equal(policy.kind, 'blocked', url)
   }
 })
 
 test('home remains internal', () => {
-  const policy = classifyGatehouseTarget(GATEHOUSE_HOME)
+  const policy = classifyGatehouseTarget(GATEHOUSE_HOME, {
+    embedOrigins: new Set()
+  })
   assert.equal(policy.kind, 'home')
 })
 
-test('unknown HTTPS sites embed directly - there is no allow-to-embed gate', () => {
-  const policy = classifyGatehouseTarget('https://example.com/path')
-  assert.equal(policy.kind, 'embed')
+test('unknown HTTPS sites default to external launch', () => {
+  const policy = classifyGatehouseTarget('https://example.com/path', {
+    embedOrigins: new Set(['https://gatehouse.parasyte.cloud'])
+  })
+  assert.equal(policy.kind, 'external')
   assert.equal(policy.secure, true)
-  assert.equal(policy.allowSameOrigin, false)
 })
 
-test('every secure, non-private destination embeds regardless of any trust list', () => {
-  assert.equal(classifyGatehouseTarget('https://example.com/path').kind, 'embed')
-  assert.equal(classifyGatehouseTarget('https://evil.example.com/').kind, 'embed')
-  assert.equal(classifyGatehouseTarget('https://gatehouse.parasyte.cloud/').kind, 'embed')
+test('only exact user-approved origins are embedded', () => {
+  const origins = buildEmbedOrigins(
+    ['https://admin.example.com', ' https://preview.example.com '],
+    'https://gatehouse.parasyte.cloud'
+  )
+  assert.equal(
+    classifyGatehouseTarget('https://admin.example.com/users', { embedOrigins: origins }).kind,
+    'embed'
+  )
+  assert.equal(
+    classifyGatehouseTarget('https://evil.admin.example.com/', { embedOrigins: origins }).kind,
+    'external'
+  )
+  assert.equal(
+    classifyGatehouseTarget('https://gatehouse.parasyte.cloud/', { embedOrigins: origins }).kind,
+    'embed'
+  )
 })
 
 test('private network destinations are blocked regardless of trust', () => {
   const policy = classifyGatehouseTarget('https://192.168.1.1/', {
-    storageTrustedOrigins: buildStorageTrustedOrigins(['https://192.168.1.1'])
+    embedOrigins: new Set(['https://192.168.1.1'])
   })
   assert.equal(policy.kind, 'blocked')
 })
 
-test('HTTP is never embedded by default, but can be explicitly allowed', () => {
-  const blocked = classifyGatehouseTarget('http://example.com/', { allowHttp: false })
-  assert.equal(blocked.kind, 'external')
-  assert.equal(blocked.secure, false)
-
-  const allowed = classifyGatehouseTarget('http://example.com/', { allowHttp: true })
-  assert.equal(allowed.kind, 'embed')
+test('HTTP is never embedded unless explicitly allowed', () => {
+  const policy = classifyGatehouseTarget('http://example.com/', {
+    embedOrigins: new Set(['http://example.com']),
+    allowHttp: false
+  })
+  assert.equal(policy.kind, 'external')
+  assert.equal(policy.secure, false)
 })
 
 test('search template is configurable but always falls back safely', () => {
@@ -115,14 +132,25 @@ test('search template is configurable but always falls back safely', () => {
   assert.equal(buildSearchUrl('x', 'javascript:alert(%s)'), 'https://www.google.com/search?q=x')
 })
 
-test('allowSameOrigin is granted only for an origin explicitly marked storage-trusted', () => {
+test('allowSameOrigin is only granted for a user-approved origin also marked storage-trusted', () => {
+  const embedOrigins = buildEmbedOrigins(['https://admin.example.com'])
   const storageTrustedOrigins = buildStorageTrustedOrigins(['https://admin.example.com'])
 
-  const trusted = classifyGatehouseTarget('https://admin.example.com/users', { storageTrustedOrigins })
+  const trusted = classifyGatehouseTarget('https://admin.example.com/users', {
+    embedOrigins,
+    storageTrustedOrigins
+  })
   assert.equal(trusted.kind, 'embed')
   assert.equal(trusted.allowSameOrigin, true)
 
-  const untrusted = classifyGatehouseTarget('https://other.example.com/', { storageTrustedOrigins })
-  assert.equal(untrusted.kind, 'embed')
-  assert.equal(untrusted.allowSameOrigin, false)
+  const untrustedEmbed = classifyGatehouseTarget('https://admin.example.com/users', { embedOrigins })
+  assert.equal(untrustedEmbed.allowSameOrigin, false)
+
+  // Marking an origin storage-trusted without also embedding it must be a no-op.
+  const notEmbedded = classifyGatehouseTarget('https://preview.example.com/', {
+    embedOrigins: new Set(),
+    storageTrustedOrigins: buildStorageTrustedOrigins(['https://preview.example.com'])
+  })
+  assert.equal(notEmbedded.kind, 'external')
+  assert.equal(notEmbedded.allowSameOrigin, false)
 })

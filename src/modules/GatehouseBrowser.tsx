@@ -9,23 +9,37 @@ import type { ChangeEvent, FormEvent } from 'react'
 import {
   ArrowLeft,
   ArrowRight,
+  Bookmark,
+  BriefcaseBusiness,
+  Compass,
+  Download,
   ExternalLink,
+  Figma,
+  Github,
   Globe2,
   Home,
+  LockKeyhole,
   LogOut,
   Plus,
+  Puzzle,
   RefreshCw,
   Search,
+  Settings,
   ShieldAlert,
   ShieldCheck,
+  Sparkles,
   Star,
-  Trash2
+  Trash2,
+  UserRound,
+  Youtube
 } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 import ParasyteMark from '../components/ParasyteMark'
+import ParasyteScene from '../components/ParasyteScene'
 import { supabase } from '../lib/supabase'
 import {
   GATEHOUSE_HOME,
+  buildEmbedOrigins,
   buildStorageTrustedOrigins,
   classifyGatehouseTarget,
   resolveGatehouseInput,
@@ -65,9 +79,9 @@ function safeMessage(action: 'load' | 'save' | 'remove' | 'trust' | 'untrust'): 
     case 'remove':
       return 'Unable to remove this site. Please try again.'
     case 'trust':
-      return 'Unable to trust this origin. Please try again.'
+      return 'Unable to approve this origin. Please try again.'
     case 'untrust':
-      return 'Unable to remove this trusted origin. Please try again.'
+      return 'Unable to remove this approved origin. Please try again.'
     default:
       return 'Unable to load your PArAsYtE data. Please refresh or sign in again.'
   }
@@ -92,7 +106,7 @@ export default function GatehouseBrowser({ user }: { user: User }) {
   // sessionStorage, or a cookie. Closing the tab or reloading wipes it -
   // that's the whole "acts like incognito unless you save it" promise. The
   // only durable state a user has is what they explicitly starred (`sites`)
-  // or explicitly trusted (`trustedOrigins`), both one row per user in
+  // or explicitly approved (`trustedOrigins`), both one row per user in
   // Supabase, both delete-able from the sidebar. Do not add any client-side
   // persistence for browsing state without changing this comment - a future
   // "let's cache the history for convenience" is exactly the feature this
@@ -104,6 +118,23 @@ export default function GatehouseBrowser({ user }: { user: User }) {
     }
   }, [])
 
+  // Two distinct, deliberately separate axes of trust:
+  //  - embedOrigins: is this origin allowed to be embedded at all. Every row
+  //    in gatehouse_trusted_origins grants this, regardless of its
+  //    allow_same_origin value. This is the "approve this origin" gate -
+  //    everything NOT on this list opens in a new tab instead, no exceptions.
+  //  - storageTrustedOrigins: of the origins already approved above, which
+  //    ones also get to keep their own cookies/localStorage/session across
+  //    reloads (the sandbox's allow-same-origin flag). This is the separate,
+  //    narrower "keep me signed in here" upgrade - it does nothing for an
+  //    origin that isn't already embedded.
+  const embedOrigins = useMemo(
+    () => buildEmbedOrigins(
+      trustedOrigins.map(o => o.origin),
+      typeof window === 'undefined' ? undefined : window.location.origin
+    ),
+    [trustedOrigins]
+  )
   const storageTrustedOrigins = useMemo(
     () => buildStorageTrustedOrigins(
       trustedOrigins.filter(o => o.allow_same_origin).map(o => o.origin)
@@ -112,8 +143,8 @@ export default function GatehouseBrowser({ user }: { user: User }) {
   )
 
   const currentPolicy = useMemo(
-    () => classifyGatehouseTarget(current, { storageTrustedOrigins }),
-    [current, storageTrustedOrigins]
+    () => classifyGatehouseTarget(current, { embedOrigins, storageTrustedOrigins }),
+    [current, embedOrigins, storageTrustedOrigins]
   )
 
   const loadData = useCallback(async () => {
@@ -294,7 +325,19 @@ export default function GatehouseBrowser({ user }: { user: User }) {
     }
   }
 
-  const trustCurrentOrigin = async () => {
+  /**
+   * Upserts an approval row for the current origin.
+   *
+   * `allowSameOrigin` defaults to false: approving a brand-new origin (from
+   * the "Approve this origin" button on the external-notice screen) only
+   * grants the embed gate, nothing more. Passing `true` (from the "Keep me
+   * signed in here" button, only ever shown once an origin is already
+   * embedded) additionally upgrades that same row to storage-trusted. The
+   * two actions are intentionally separate calls to the same upsert so a
+   * user can approve an origin for embedding without ever granting it
+   * persistent storage access.
+   */
+  const trustCurrentOrigin = async (allowSameOrigin = false) => {
     const client = supabase
     if (!client) return
     const parsed = safeWebUrl(current)
@@ -304,7 +347,7 @@ export default function GatehouseBrowser({ user }: { user: User }) {
       const { error } = await client
         .from('gatehouse_trusted_origins')
         .upsert(
-          { user_id: user.id, origin: parsed.origin, allow_same_origin: true },
+          { user_id: user.id, origin: parsed.origin, allow_same_origin: allowSameOrigin },
           { onConflict: 'user_id,origin' }
         )
       if (error) throw error
@@ -341,306 +384,476 @@ export default function GatehouseBrowser({ user }: { user: User }) {
   const securityTitle = currentPolicy.kind === 'home'
     ? 'PArAsYtE home'
     : currentPolicy.kind === 'embed'
-      ? (currentPolicy.allowSameOrigin ? 'Embedded - remembers its own session' : 'Embedded, sandboxed (no persistent session)')
+      ? (currentPolicy.allowSameOrigin ? 'Approved - remembers its own session' : 'Approved for embedding (sandboxed, no persistent session)')
       : currentPolicy.kind === 'blocked'
         ? 'Blocked destination'
-        : 'Insecure HTTP - opens in a separate tab'
+        : currentPolicy.secure
+          ? 'Not on your approved list - opens in a separate tab'
+          : 'Insecure HTTP - opens in a separate tab'
 
   return (
     <section className="gatehouseBrowser" data-policy={currentPolicy.kind}>
-      <div className="gatehouseChrome">
-        <div className="gatehouseBrand">
-          <ParasyteMark size={20} />
-          <span>
-            PArAsYtE
-            <span className="gatehouseBrandSuffix"> Browser</span>
-          </span>
+      <ParasyteScene className="gatehouseBrowserScene" />
+
+      <div className="gatehouseWindow">
+        <header className="gatehouseTitlebar">
+          <div className="gatehouseWindowDots" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </div>
+
+          <button type="button" className="gatehouseBrand" onClick={goHome} title="PArAsYtE home">
+            <ParasyteMark size={24} />
+            <span>
+              PArAsYtE
+              <span className="gatehouseBrandSuffix"> Browser</span>
+            </span>
+          </button>
+
+          <div className="gatehouseTabs" aria-label="Browser tab">
+            <div className="gatehouseTab gatehouseTabActive">
+              {currentPolicy.kind === 'home' ? <Home size={14} /> : <Globe2 size={14} />}
+              <span>{currentPolicy.kind === 'home' ? 'New Tab' : currentPolicy.hostname || 'PArAsYtE'}</span>
+              <span className={`gatehouseTabTrust ${currentPolicy.kind}`} aria-hidden="true" title={securityTitle} />
+            </div>
+            <button
+              type="button"
+              className="gatehouseTab gatehouseTabGhost"
+              onClick={() => { addressRef.current?.focus(); addressRef.current?.select() }}
+              title="Discover"
+            >
+              <Compass size={14} />
+              <span>Discover</span>
+            </button>
+            <button
+              type="button"
+              className="gatehouseTab gatehouseTabGhost gatehouseTabWork"
+              onClick={() => setMessage('Your saved work sites are available from Bookmarks.')}
+              title="Work"
+            >
+              <BriefcaseBusiness size={14} />
+              <span>Work</span>
+            </button>
+            <button type="button" className="gatehouseNewTab" onClick={goHome} title="New tab" aria-label="New tab">
+              <Plus size={16} />
+            </button>
+          </div>
+
+          <div className="gatehouseTitleActions">
+            <span className="gatehouseAccountPill" title={user.email || 'Signed in'}>
+              <UserRound size={15} />
+              <span>{user.email || 'Account'}</span>
+            </span>
+            <button type="button" onClick={signOut} title="Sign out" aria-label="Sign out">
+              <LogOut size={16} />
+            </button>
+          </div>
+        </header>
+
+        <div className="gatehouseChrome">
+          <div className="gatehouseNavButtons">
+            <button type="button" disabled={historyIndex <= 0} onClick={goBack} title="Back" aria-label="Back">
+              <ArrowLeft size={17} />
+            </button>
+            <button
+              type="button"
+              disabled={historyIndex >= history.length - 1}
+              onClick={goForward}
+              title="Forward"
+              aria-label="Forward"
+            >
+              <ArrowRight size={17} />
+            </button>
+            <button
+              type="button"
+              disabled={currentPolicy.kind !== 'embed'}
+              onClick={() => setReloadKey(v => v + 1)}
+              title="Reload"
+              aria-label="Reload"
+            >
+              <RefreshCw size={17} />
+            </button>
+          </div>
+
+          <form className="gatehouseOmnibox" onSubmit={submit}>
+            <span className={`gatehouseSecurityIcon ${currentPolicy.kind}`} title={securityTitle}>
+              {currentPolicy.kind === 'blocked' || !currentPolicy.secure
+                ? <ShieldAlert size={15} />
+                : <ShieldCheck size={15} />}
+            </span>
+            <input
+              ref={addressRef}
+              value={address}
+              placeholder="Search or enter a URL"
+              aria-label="Search or enter a web address"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              onChange={(event: ChangeEvent<HTMLInputElement>) => setAddress(event.target.value)}
+            />
+            <button type="submit" title="Go" aria-label="Go">
+              <Search size={16} />
+            </button>
+          </form>
+
+          <div className="gatehouseActions">
+            <button
+              type="button"
+              disabled={current === GATEHOUSE_HOME || currentPolicy.kind === 'blocked'}
+              onClick={() => void saveSite()}
+              title="Save site"
+              aria-label="Save current address"
+            >
+              <Star size={17} />
+            </button>
+            <button
+              type="button"
+              disabled={current === GATEHOUSE_HOME || currentPolicy.kind === 'blocked'}
+              onClick={openCurrentExternal}
+              title="Open in external browser"
+              aria-label="Open current address in external browser"
+            >
+              <ExternalLink size={17} />
+            </button>
+          </div>
         </div>
 
-        <div className="gatehouseNavButtons">
-          <button type="button" disabled={historyIndex <= 0} onClick={goBack} title="Back" aria-label="Back">
-            <ArrowLeft size={16} />
-          </button>
-          <button
-            type="button"
-            disabled={historyIndex >= history.length - 1}
-            onClick={goForward}
-            title="Forward"
-            aria-label="Forward"
-          >
-            <ArrowRight size={16} />
-          </button>
-          <button
-            type="button"
-            disabled={currentPolicy.kind !== 'embed'}
-            onClick={() => setReloadKey(v => v + 1)}
-            title="Reload"
-            aria-label="Reload"
-          >
-            <RefreshCw size={16} />
-          </button>
-          <button type="button" onClick={goHome} title="Home" aria-label="Home">
-            <Home size={16} />
-          </button>
+        <div className="gatehouseTrustBar" aria-live="polite">
+          <span className={`gatehouseTrustDot ${currentPolicy.kind}`} />
+          <strong>
+            {currentPolicy.kind === 'home' ? 'Protected PArAsYtE session' : currentPolicy.hostname || 'Blocked address'}
+          </strong>
+          <span>{currentPolicy.reason}</span>
         </div>
 
-        <form className="gatehouseOmnibox" onSubmit={submit}>
-          <span className={`gatehouseSecurityIcon ${currentPolicy.kind}`} title={securityTitle}>
-            {currentPolicy.kind === 'blocked' || !currentPolicy.secure
-              ? <ShieldAlert size={15} />
-              : <ShieldCheck size={15} />}
-          </span>
-          <input
-            ref={addressRef}
-            value={address}
-            placeholder="Search the web or enter a web address"
-            aria-label="Search or enter a web address"
-            autoCapitalize="none"
-            autoCorrect="off"
-            spellCheck={false}
-            onChange={(event: ChangeEvent<HTMLInputElement>) => setAddress(event.target.value)}
-          />
-          <button type="submit" title="Go" aria-label="Go">
-            <Search size={16} />
-          </button>
-        </form>
+        {message && <div className="moduleNotice" role="status">{message}</div>}
 
-        <div className="gatehouseActions">
-          <button
-            type="button"
-            disabled={current === GATEHOUSE_HOME || currentPolicy.kind === 'blocked'}
-            onClick={() => void saveSite()}
-            title="Save site"
-            aria-label="Save current address"
-          >
-            <Star size={16} />
-          </button>
-          <button
-            type="button"
-            disabled={current === GATEHOUSE_HOME || currentPolicy.kind === 'blocked'}
-            onClick={openCurrentExternal}
-            title="Open in external browser"
-            aria-label="Open current address in external browser"
-          >
-            <ExternalLink size={16} />
-          </button>
-          <button type="button" onClick={signOut} title="Sign out" aria-label="Sign out">
-            <LogOut size={16} />
-          </button>
-        </div>
-      </div>
-
-      <div className="gatehouseTrustBar" aria-live="polite">
-        <span className={`gatehouseTrustDot ${currentPolicy.kind}`} />
-        <strong>
-          {currentPolicy.kind === 'home' ? 'PArAsYtE' : currentPolicy.hostname || 'Blocked address'}
-        </strong>
-        <span>{currentPolicy.reason}</span>
-      </div>
-
-      {message && <div className="moduleNotice" role="status">{message}</div>}
-
-      <div className="gatehouseBody">
-        <aside className="gatehouseSidebar">
-          {favorites.length > 0 && (
-            <>
-              <div className="gatehouseSidebarTitle">Favorites</div>
-              {favorites.map(site => (
-                <button type="button" key={site.id} title={site.title} onClick={() => navigate(site.url)}>
-                  <Globe2 size={14} />
-                  <span>{site.title}</span>
-                </button>
-              ))}
-            </>
-          )}
-
-          <div className="gatehouseSidebarTitle">My sites</div>
-          {sites.map(site => (
-            <div className="gatehouseSiteRow" key={site.id}>
-              <button type="button" onClick={() => navigate(site.url)}>
-                <Star size={13} />
-                <span>{site.title}</span>
+        <div className="gatehouseBody">
+          <aside className="gatehouseSidebar">
+            <nav className="gatehouseSideNav" aria-label="PArAsYtE navigation">
+              <button type="button" className="gatehouseSideNavItem active" onClick={goHome}>
+                <span className="gatehouseSideNavIcon"><Home size={20} /></span>
+                <span>Home</span>
               </button>
               <button
                 type="button"
-                className="remove"
-                onClick={() => void removeSite(site.id)}
-                title="Remove site"
-                aria-label={`Remove ${site.title}`}
+                className="gatehouseSideNavItem"
+                onClick={() => { addressRef.current?.focus(); addressRef.current?.select() }}
               >
-                <Trash2 size={12} />
+                <span className="gatehouseSideNavIcon"><Compass size={20} /></span>
+                <span>Explore</span>
               </button>
-            </div>
-          ))}
-          {sites.length === 0 && <span className="gatehouseEmpty">No saved sites yet.</span>}
-
-          {trustedOrigins.length > 0 && (
-            <>
-              <div className="gatehouseSidebarTitle">Keeps its own session</div>
-              {trustedOrigins.map(origin => (
-                <div className="gatehouseSiteRow" key={origin.id}>
-                  <span className="gatehouseOriginLabel">{origin.origin}</span>
-                  <button
-                    type="button"
-                    className="remove"
-                    onClick={() => void untrustOrigin(origin.id)}
-                    title="Stop remembering this origin's session"
-                    aria-label={`Stop remembering ${origin.origin}`}
-                  >
-                    <Trash2 size={12} />
-                  </button>
-                </div>
-              ))}
-            </>
-          )}
-        </aside>
-
-        <main className="gatehouseViewport">
-          {currentPolicy.kind === 'home' ? (
-            <div className="gatehouseHome">
-              <ParasyteMark size={48} />
-              <span className="eyebrow">A CLEANER WEB, TOGETHER</span>
-              <h2>Open what you trust. Nothing else gets in, and nothing sticks around.</h2>
-              <p>
-                Type an address and it opens right here, sandboxed, whatever it is -
-                there's no separate "allowed to embed" list gating that. The only
-                thing trusting an origin does is let it keep its own session between
-                visits; that's optional and off by default. History, pop-ups, and
-                redirects out of this tab are blocked regardless, and nothing is
-                remembered between visits unless you explicitly save it.
-              </p>
-
-              <form className="gatehouseHomeSearch" onSubmit={submit}>
-                <Search size={20} />
-                <input
-                  value={address}
-                  placeholder="Search the web"
-                  aria-label="Search the web"
-                  onChange={(event: ChangeEvent<HTMLInputElement>) => setAddress(event.target.value)}
-                />
-                <button type="submit">Search</button>
-              </form>
-
-              <div className="gatehouseHomeLinks">
-                {sites.slice(0, 8).map(site => (
-                  <button type="button" key={site.id} onClick={() => navigate(site.url)}>
-                    <Globe2 size={17} />
-                    <span>{site.title}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : currentPolicy.kind === 'blocked' ? (
-            <div className="gatehouseExternalNotice gatehouseBlockedNotice">
-              <ShieldAlert size={30} />
-              <h3>Navigation blocked</h3>
-              <p>{currentPolicy.reason}</p>
-              <code>{current}</code>
-              <button type="button" onClick={goHome}>
-                <Home size={16} />
-                Return home
+              <button
+                type="button"
+                className="gatehouseSideNavItem"
+                onClick={() => setMessage(sites.length ? 'Your saved sites are shown below.' : 'No bookmarks yet. Save a site with the star button.')}
+              >
+                <span className="gatehouseSideNavIcon"><Bookmark size={19} /></span>
+                <span>Bookmarks</span>
               </button>
-            </div>
-          ) : currentPolicy.kind === 'external' ? (
-            <div className="gatehouseExternalNotice">
-              <ShieldAlert size={30} />
-              <h3>Can't embed insecure pages</h3>
-              <p>
-                This address is plain HTTP, not HTTPS. Browsers block insecure
-                content inside an HTTPS app like PArAsYtE outright (mixed-content
-                blocking) - there's no way around that from here.
-              </p>
-              <code>{current}</code>
-              <div className="gatehouseExternalActions">
-                <button type="button" onClick={openCurrentExternal}>
-                  <ExternalLink size={16} />
-                  Open in a tab
-                </button>
-                <button type="button" className="secondary" onClick={goHome}>
-                  <Home size={16} />
-                  Home
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="gatehouseFrameShell">
-              <div className="gatehouseFrameStatus" aria-live="polite">
-                <span className={`gatehouseFrameDot ${frameStatus}`} />
-                <span>
-                  {frameStatus === 'loading' && 'Loading...'}
-                  {frameStatus === 'ready' && (currentPolicy.allowSameOrigin ? 'Loaded - session remembered here' : 'Loaded (sandboxed)')}
-                  {frameStatus === 'slow' && 'This site is taking longer than expected'}
-                  {frameStatus === 'failed' && 'The embedded site could not be loaded'}
-                  {frameStatus === 'idle' && 'Ready'}
-                </span>
-                {(frameStatus === 'slow' || frameStatus === 'failed') && (
-                  <button type="button" onClick={() => setReloadKey(v => v + 1)}>
-                    <RefreshCw size={13} />
-                    Retry
-                  </button>
-                )}
-                {!currentPolicy.allowSameOrigin && (
-                  <button
-                    type="button"
-                    onClick={() => void trustCurrentOrigin()}
-                    title="Only do this for a site you fully trust - it lets that site's scripts read and write its own storage and cookies while embedded."
-                  >
-                    <Plus size={13} />
-                    Keep me signed in here
-                  </button>
-                )}
-                <button type="button" onClick={openCurrentExternal}>
-                  <ExternalLink size={13} />
-                  Open outside
-                </button>
-              </div>
-              {/*
-                Sandbox flags, deliberately minimal:
-                - allow-forms, allow-scripts: the origin needs these to function.
-                - allow-same-origin: only ever added when currentPolicy.allowSameOrigin
-                  is true, i.e. the user explicitly opted this origin into storage
-                  trust (see policy.ts). Never granted by default, and unrelated to
-                  whether the origin gets embedded at all - every secure, non-private
-                  destination embeds regardless of this flag.
-                - allow-popups is intentionally NEVER included. Without it, an
-                  embedded page's window.open() and target="_blank" links are
-                  silently blocked - no popups, full stop, even for trusted origins.
-                  Trade-off worth knowing: some sites' "Sign in with Google/Microsoft"
-                  flows use a popup and will not work here. If that ever needs to
-                  change, it should be a per-origin opt-in, not a global default.
-                - allow-top-navigation / allow-top-navigation-by-user-activation are
-                  also intentionally NEVER included. Without them, nothing an
-                  embedded page runs can redirect this tab or navigate the parent
-                  frame - that's what keeps everything embedded staying embedded,
-                  even now that embedding itself is no longer gated by trust.
-                  Do not add either flag; that reopens the exact redirect/breakout
-                  surface this app exists to close.
-              */}
-              <iframe
-                key={`${current}-${reloadKey}`}
-                title="PArAsYtE browser view"
-                src={current}
-                referrerPolicy="no-referrer"
-                sandbox={
-                  currentPolicy.allowSameOrigin
-                    ? 'allow-forms allow-scripts allow-same-origin'
-                    : 'allow-forms allow-scripts'
-                }
-                allow="camera 'none'; microphone 'none'; geolocation 'none'; payment 'none'; usb 'none'; serial 'none'; hid 'none'; clipboard-read 'none'; clipboard-write 'none'"
-                onLoad={() => setFrameStatus('ready')}
-                onError={() => setFrameStatus('failed')}
-              />
-              {(frameStatus === 'slow' || frameStatus === 'failed') && (
-                <div className="gatehouseFrameFallback">
-                  If the page is blank, its server may still refuse to be framed at
-                  all (X-Frame-Options / frame-ancestors) - that's the site's own
-                  server-side decision and nothing on this end can override it.
-                  Open it outside PArAsYtE instead.
-                </div>
+              <button
+                type="button"
+                className="gatehouseSideNavItem"
+                onClick={() => setMessage('Downloads are handled by your system browser and are not stored by PArAsYtE.')}
+              >
+                <span className="gatehouseSideNavIcon"><Download size={19} /></span>
+                <span>Downloads</span>
+              </button>
+              <button
+                type="button"
+                className="gatehouseSideNavItem"
+                onClick={() => setMessage('Extension support is not enabled in this browser shell.')}
+              >
+                <span className="gatehouseSideNavIcon"><Puzzle size={19} /></span>
+                <span>Extensions</span>
+              </button>
+              <button
+                type="button"
+                className="gatehouseSideNavItem"
+                onClick={() => setMessage(`${trustedOrigins.length} approved origin${trustedOrigins.length === 1 ? '' : 's'} stored for this account.`)}
+              >
+                <span className="gatehouseSideNavIcon"><Settings size={19} /></span>
+                <span>Settings</span>
+              </button>
+            </nav>
+
+            <div className="gatehouseSidebarLibrary">
+              {favorites.length > 0 && (
+                <>
+                  <div className="gatehouseSidebarTitle"><Star size={12} /> Favorites</div>
+                  {favorites.slice(0, 4).map(site => (
+                    <button type="button" key={site.id} title={site.title} onClick={() => navigate(site.url)}>
+                      <Globe2 size={14} />
+                      <span>{site.title}</span>
+                    </button>
+                  ))}
+                </>
+              )}
+
+              {sites.length > 0 && (
+                <>
+                  <div className="gatehouseSidebarTitle"><Bookmark size={12} /> Saved sites</div>
+                  {sites.slice(0, 5).map(site => (
+                    <div className="gatehouseSiteRow" key={site.id}>
+                      <button type="button" onClick={() => navigate(site.url)}>
+                        <Globe2 size={14} />
+                        <span>{site.title}</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="remove"
+                        onClick={() => void removeSite(site.id)}
+                        title="Remove site"
+                        aria-label={`Remove ${site.title}`}
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </>
+              )}
+
+              {trustedOrigins.length > 0 && (
+                <>
+                  <div className="gatehouseSidebarTitle"><ShieldCheck size={12} /> Approved</div>
+                  {trustedOrigins.slice(0, 3).map(origin => (
+                    <div className="gatehouseSiteRow" key={origin.id}>
+                      <span className="gatehouseOriginLabel">
+                        <LockKeyhole size={12} />
+                        {origin.origin}
+                        {origin.allow_same_origin && <em title="Also keeps its own session">·session</em>}
+                      </span>
+                      <button
+                        type="button"
+                        className="remove"
+                        onClick={() => void untrustOrigin(origin.id)}
+                        title="Remove this approved origin (it will stop embedding)"
+                        aria-label={`Remove ${origin.origin} from approved origins`}
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </>
               )}
             </div>
-          )}
-        </main>
+
+            <div className="gatehouseSidebarFooter gatehouseSidebarFooterConcept">
+              <span>Faster</span>
+              <span>Safer</span>
+              <span>Together</span>
+            </div>
+          </aside>
+
+          <main className="gatehouseViewport">
+            {currentPolicy.kind === 'home' ? (
+              <div className="gatehouseHome">
+                <ParasyteScene className="gatehouseHomeScene" />
+                <div className="gatehouseHomeMotto gatehouseHomeMottoRight" aria-hidden="true">
+                  <span>PEOPLE</span>
+                  <span>IDEAS</span>
+                  <span>A BRIGHTER WEB</span>
+                </div>
+
+                <div className="gatehouseHomeHero">
+                  <div className="gatehouseHomeLogoHalo">
+                    <ParasyteMark size={82} />
+                  </div>
+                  <h1><strong>PArAsYtE</strong> Browser</h1>
+                  <span className="eyebrow">A CLEANER WEB TOGETHER</span>
+
+                  <form className="gatehouseHomeSearch" onSubmit={submit}>
+                    <Search size={21} />
+                    <input
+                      value={address}
+                      placeholder="Search the web, privately..."
+                      aria-label="Search the web"
+                      onChange={(event: ChangeEvent<HTMLInputElement>) => setAddress(event.target.value)}
+                    />
+                    <button type="submit" aria-label="Search">
+                      <ArrowRight size={19} />
+                    </button>
+                  </form>
+                </div>
+
+                <div className="gatehouseQuickGrid" aria-label="Quick access">
+                  {sites.length > 0 ? sites.slice(0, 5).map(site => (
+                    <button type="button" className="gatehouseQuickTile" key={site.id} onClick={() => navigate(site.url)}>
+                      <span className="gatehouseQuickIcon"><Globe2 size={22} /></span>
+                      <span>{site.title}</span>
+                    </button>
+                  )) : (
+                    <>
+                      <button type="button" className="gatehouseQuickTile" onClick={() => navigate('https://www.youtube.com')}>
+                        <span className="gatehouseQuickIcon"><Youtube size={22} /></span><span>YouTube</span>
+                      </button>
+                      <button type="button" className="gatehouseQuickTile" onClick={() => navigate('https://github.com')}>
+                        <span className="gatehouseQuickIcon"><Github size={22} /></span><span>GitHub</span>
+                      </button>
+                      <button type="button" className="gatehouseQuickTile" onClick={() => navigate('https://www.notion.so')}>
+                        <span className="gatehouseQuickIcon"><BriefcaseBusiness size={21} /></span><span>Notion</span>
+                      </button>
+                      <button type="button" className="gatehouseQuickTile gatehouseQuickTileAccent" onClick={() => navigate('https://chatgpt.com')}>
+                        <span className="gatehouseQuickIcon"><Sparkles size={22} /></span><span>AI Tools</span>
+                      </button>
+                      <button type="button" className="gatehouseQuickTile" onClick={() => navigate('https://www.figma.com')}>
+                        <span className="gatehouseQuickIcon"><Figma size={22} /></span><span>Figma</span>
+                      </button>
+                    </>
+                  )}
+                  <button
+                    type="button"
+                    className="gatehouseQuickTile gatehouseQuickTileAdd"
+                    onClick={() => { addressRef.current?.focus(); addressRef.current?.select() }}
+                  >
+                    <span className="gatehouseQuickIcon"><Plus size={24} /></span>
+                    <span>Add site</span>
+                  </button>
+                </div>
+
+                <div className="gatehouseHomeFeatureGrid">
+                  <article className="gatehouseFeatureCard gatehouseFeatureCardGold">
+                    <div className="gatehouseFeatureIcon"><ShieldCheck size={22} /></div>
+                    <div>
+                      <h2>Approved sites embed. Nothing else does.</h2>
+                      <p>Only origins you explicitly approve open inside PArAsYtE's hardened sandbox. Everything else opens in a separate tab.</p>
+                    </div>
+                    <span className="gatehouseFeatureArrow"><ArrowRight size={18} /></span>
+                  </article>
+
+                  <article className="gatehouseFeatureCard gatehouseFeatureCardBlue">
+                    <div className="gatehouseFeatureIcon"><Sparkles size={22} /></div>
+                    <div>
+                      <h2>Make trust yours</h2>
+                      <p>Approve exactly which origins may embed here, and separately choose which of those also keep their own session. Your browsing history stays in memory only.</p>
+                    </div>
+                    <span className="gatehouseFeatureArrow"><ArrowRight size={18} /></span>
+                  </article>
+                </div>
+
+                <div className="gatehouseHomeFooterMotto" aria-hidden="true">
+                  <Compass size={14} />
+                  EXPLORE · CREATE · BELONG
+                </div>
+              </div>
+            ) : currentPolicy.kind === 'blocked' ? (
+              <div className="gatehouseExternalNotice gatehouseBlockedNotice">
+                <div className="gatehouseNoticeIcon"><ShieldAlert size={32} /></div>
+                <span className="gatehouseNoticeEyebrow">PArAsYtE SECURITY</span>
+                <h3>Navigation blocked</h3>
+                <p>{currentPolicy.reason}</p>
+                <code>{current}</code>
+                <div className="gatehouseExternalActions">
+                  <button type="button" className="secondary" onClick={goHome}>
+                    <Home size={16} />
+                    Return home
+                  </button>
+                </div>
+              </div>
+            ) : currentPolicy.kind === 'external' ? (
+              <div className="gatehouseExternalNotice">
+                <div className="gatehouseNoticeIcon">
+                  {currentPolicy.secure ? <ShieldCheck size={32} /> : <ShieldAlert size={32} />}
+                </div>
+                <span className="gatehouseNoticeEyebrow">
+                  {currentPolicy.secure ? 'NOT YET APPROVED' : 'INSECURE DESTINATION'}
+                </span>
+                <h3>
+                  {currentPolicy.secure ? 'Opens in a separate tab' : 'This page cannot be embedded safely'}
+                </h3>
+                <p>
+                  {currentPolicy.secure
+                    ? "This origin isn't on your approved list, so PArAsYtE opens it in a separate tab instead of embedding it. Approve it below if you'd like it to open inside the browser from now on."
+                    : "This address is plain HTTP, not HTTPS. Modern browsers block insecure content inside an HTTPS app like PArAsYtE, so this can't be embedded no matter what you approve. Open it in a separate tab if you still want to continue."}
+                </p>
+                <code>{current}</code>
+                <div className="gatehouseExternalActions">
+                  <button type="button" onClick={openCurrentExternal}>
+                    <ExternalLink size={16} />
+                    Open in a tab
+                  </button>
+                  {currentPolicy.secure && (
+                    <button type="button" className="secondary" onClick={() => void trustCurrentOrigin()}>
+                      <Plus size={16} />
+                      Approve this origin
+                    </button>
+                  )}
+                  <button type="button" className="secondary" onClick={goHome}>
+                    <Home size={16} />
+                    Home
+                  </button>
+                </div>
+                {currentPolicy.secure && (
+                  <p className="gatehouseTrustWarning">
+                    Only approve origins you control or fully trust. An approved origin runs with
+                    scripts enabled inside PArAsYtE. Pop-ups and any attempt to redirect this tab
+                    are always blocked, even for origins you approve.
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="gatehouseFrameShell">
+                <div className="gatehouseFrameStatus" aria-live="polite">
+                  <span className={`gatehouseFrameDot ${frameStatus}`} />
+                  <span>
+                    {frameStatus === 'loading' && 'Loading securely...'}
+                    {frameStatus === 'ready' && (currentPolicy.allowSameOrigin ? 'Loaded · session remembered for this approved origin' : 'Loaded · isolated sandbox')}
+                    {frameStatus === 'slow' && 'This site is taking longer than expected'}
+                    {frameStatus === 'failed' && 'The embedded site could not be loaded'}
+                    {frameStatus === 'idle' && 'Ready'}
+                  </span>
+                  {(frameStatus === 'slow' || frameStatus === 'failed') && (
+                    <button type="button" onClick={() => setReloadKey(v => v + 1)}>
+                      <RefreshCw size={13} />
+                      Retry
+                    </button>
+                  )}
+                  {!currentPolicy.allowSameOrigin && (
+                    <button
+                      type="button"
+                      onClick={() => void trustCurrentOrigin(true)}
+                      title="Only do this for a site you fully trust - it lets that site's scripts read and write its own storage and cookies while embedded."
+                    >
+                      <Plus size={13} />
+                      Keep me signed in here
+                    </button>
+                  )}
+                  <button type="button" onClick={openCurrentExternal}>
+                    <ExternalLink size={13} />
+                    Open outside
+                  </button>
+                </div>
+                {/*
+                  Security boundary: keep the sandbox deliberately minimal.
+                  Do not add allow-popups or top-navigation flags here; approved
+                  origins may only gain allow-same-origin for their own session.
+                */}
+                <iframe
+                  key={`${current}-${reloadKey}`}
+                  title="PArAsYtE browser view"
+                  src={current}
+                  referrerPolicy="no-referrer"
+                  sandbox={
+                    currentPolicy.allowSameOrigin
+                      ? 'allow-forms allow-scripts allow-same-origin'
+                      : 'allow-forms allow-scripts'
+                  }
+                  allow="camera 'none'; microphone 'none'; geolocation 'none'; payment 'none'; usb 'none'; serial 'none'; hid 'none'; clipboard-read 'none'; clipboard-write 'none'"
+                  onLoad={() => setFrameStatus('ready')}
+                  onError={() => setFrameStatus('failed')}
+                />
+                {(frameStatus === 'slow' || frameStatus === 'failed') && (
+                  <div className="gatehouseFrameFallback">
+                    If the page is blank, its server may refuse to be framed using
+                    X-Frame-Options or frame-ancestors. PArAsYtE cannot override a
+                    destination's server-side security policy; open it outside instead.
+                  </div>
+                )}
+              </div>
+            )}
+          </main>
+        </div>
       </div>
     </section>
   )

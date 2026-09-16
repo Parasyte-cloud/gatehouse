@@ -1,24 +1,13 @@
-// PArAsYtE core policy engine.
+// Gatehouse core policy engine.
 //
-// Embedding model: every secure (https), non-private-network destination is
-// embedded directly inside the app - there is no separate "allowed to
-// embed" allowlist gating that. What IS still deny-by-default,
-// unconditionally, regardless of any trust setting:
-//   - private-network / localhost destinations (isPrivateNetworkHost) are
-//     always blocked outright - never embedded, never opened externally.
-//   - insecure HTTP is never embedded (opens in a separate tab instead) -
-//     not a policy choice, browsers refuse to load HTTP content inside an
-//     HTTPS page at all (mixed-content blocking), so there's nothing to
-//     gain by trying.
-// The one thing "trust" (storageTrustedOrigins) still controls is whether
-// one specific embedded origin also gets `allow-same-origin` on its iframe
-// sandbox, i.e. whether it's allowed to keep its own cookies/localStorage/
-// sessionStorage across reloads instead of getting a fresh, storage-less
-// sandbox every time. This file is intentionally free of any product-
-// specific concepts - no accounts, no tenants, no env vars - so it can be
-// reused as-is. Do not add per-user/per-tenant logic to this file; callers
-// pass in whatever trusted-origin set is relevant to the current user and
-// this module just answers "what should happen if we navigate here."
+// This is the exact-origin, deny-by-default browsing policy originally built
+// and hardened for RideArrivo's PArAsYtE Browser (see the V2.1 changelog in
+// that repo for the full history, including a fixed IPv4-in-IPv6 private-
+// network bypass). It is intentionally free of any product-specific
+// concepts - no accounts, no tenants, no env vars - so it can be reused
+// as-is here. Do not add per-user/per-tenant logic to this file; callers
+// pass in whatever origin sets are relevant to the current user and this
+// module just answers "what should happen if we navigate here."
 
 export const GATEHOUSE_HOME = 'gatehouse://home'
 
@@ -40,21 +29,17 @@ export type GatehouseTargetPolicy = {
 }
 
 export type GatehousePolicyOptions = {
+  embedOrigins: ReadonlySet<string>
   /**
-   * Origins explicitly trusted to keep their own client-side session/
-   * storage state while framed (grants `allow-same-origin` in addition to
-   * the default sandbox flags). Leave empty by default. Only add an origin
-   * here if it is an app the user genuinely controls or trusts, and is
-   * known to break without localStorage/sessionStorage/script-level origin
-   * access when sandboxed. An origin listed here must not itself embed
-   * untrusted third-party content, since allow-scripts plus
-   * allow-same-origin together let framed script escape sandbox isolation
-   * for that one origin.
-   *
-   * This does NOT control whether an origin is embedded at all - every
-   * secure, non-private destination is embedded regardless of trust (see
-   * classifyGatehouseTarget below). Trust only ever grants the extra
-   * allow-same-origin permission on top of that.
+   * Origins that are both embeddable AND explicitly approved to keep their own
+   * client-side session/storage state while framed (grants `allow-same-origin`
+   * in addition to the default sandbox flags). Leave empty by default. Only
+   * add an origin here if it is already in `embedOrigins`, is an app the user
+   * genuinely controls or trusts, and is known to break without localStorage/
+   * sessionStorage/script-level origin access when sandboxed. An origin
+   * listed here must not itself embed untrusted third-party content, since
+   * allow-scripts plus allow-same-origin together let framed script escape
+   * sandbox isolation for that one origin.
    */
   storageTrustedOrigins?: ReadonlySet<string>
   allowPrivateNetwork?: boolean
@@ -213,7 +198,7 @@ export function isPrivateNetworkHost(hostname: string): boolean {
 
 export function classifyGatehouseTarget(
   rawValue: string,
-  options: GatehousePolicyOptions = {}
+  options: GatehousePolicyOptions
 ): GatehouseTargetPolicy {
   if (rawValue === GATEHOUSE_HOME) {
     return {
@@ -222,7 +207,7 @@ export function classifyGatehouseTarget(
       hostname: '',
       origin: '',
       secure: true,
-      reason: 'PArAsYtE home',
+      reason: 'Gatehouse home',
       allowSameOrigin: false
     }
   }
@@ -262,26 +247,31 @@ export function classifyGatehouseTarget(
       hostname: url.hostname,
       origin: url.origin,
       secure: false,
-      reason: 'Insecure HTTP pages cannot be embedded here - browsers block that outright (mixed content). Opens in a separate tab instead.',
+      reason: 'Insecure HTTP pages are not embedded inside PArAsYtE.',
       allowSameOrigin: false
     }
   }
 
-  // Every secure, non-private destination embeds - there is no "is this
-  // origin allowed to embed" gate. The only thing left to decide is
-  // whether this specific origin has also been explicitly trusted to keep
-  // its own storage/session while framed.
-  const trusted = Boolean(options.storageTrustedOrigins?.has(url.origin))
+  if (options.embedOrigins.has(url.origin)) {
+    return {
+      kind: 'embed',
+      value: url.toString(),
+      hostname: url.hostname,
+      origin: url.origin,
+      secure,
+      reason: 'You have approved this origin for embedded use.',
+      allowSameOrigin: Boolean(options.storageTrustedOrigins?.has(url.origin))
+    }
+  }
+
   return {
-    kind: 'embed',
+    kind: 'external',
     value: url.toString(),
     hostname: url.hostname,
     origin: url.origin,
     secure,
-    reason: trusted
-      ? "You've trusted this origin to keep its own session while embedded."
-      : 'Running sandboxed inside PArAsYtE. Trust it to let it keep its own session between visits.',
-    allowSameOrigin: trusted
+    reason: 'This site is not on your approved-origins list.',
+    allowSameOrigin: false
   }
 }
 
@@ -303,11 +293,32 @@ function parseOriginList(value: string | undefined | null): Set<string> {
 }
 
 /**
- * Builds the set of origins a user has opted into storage trust for (see
- * GatehousePolicyOptions.storageTrustedOrigins). Deliberately takes a plain
- * string array (DB rows), not an env var - trust here is per-user data, not
- * a build-time global, because one user's decision must never apply to any
- * other Gatehouse user.
+ * Builds a user's embed-origin set from their saved approved-origin rows plus
+ * the app's own current origin (so PArAsYtE can always embed itself).
+ * Deliberately takes a plain string array (DB rows), not an env var - trust
+ * here is per-user data, not a build-time global, because one user's decision
+ * to approve an origin must never make that origin embeddable for every other
+ * PArAsYtE user.
+ */
+export function buildEmbedOrigins(
+  trustedOrigins: readonly string[],
+  currentOrigin?: string
+): ReadonlySet<string> {
+  const origins = parseOriginList(trustedOrigins.join(','))
+
+  if (currentOrigin) {
+    const current = safeWebUrl(currentOrigin)
+    if (current) {
+      origins.add(current.origin)
+    }
+  }
+
+  return origins
+}
+
+/**
+ * Subset of a user's approved origins that they've also opted into keeping
+ * their own storage/session while framed. See GatehousePolicyOptions.storageTrustedOrigins.
  */
 export function buildStorageTrustedOrigins(storageTrustedOrigins: readonly string[]): ReadonlySet<string> {
   return parseOriginList(storageTrustedOrigins.join(','))

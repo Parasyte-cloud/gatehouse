@@ -1,6 +1,16 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import {
+  ArrowRight,
+  Building2,
+  Eye,
+  EyeOff,
+  LockKeyhole,
+  Mail,
+  ShieldCheck
+} from 'lucide-react'
 import ParasyteMark from '../components/ParasyteMark'
+import ParasyteScene from '../components/ParasyteScene'
 import { supabase } from '../lib/supabase'
 import '../gatehouse.css'
 
@@ -12,6 +22,7 @@ export default function AuthScreen() {
   const [password, setPassword] = useState('')
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
@@ -59,70 +70,146 @@ export default function AuthScreen() {
     }
   }
 
+  const heading = mode === 'sign-in'
+    ? 'Welcome to PArAsYtE Browser'
+    : mode === 'sign-up'
+      ? 'Create your PArAsYtE account'
+      : 'Reset your password'
+
+  const intro = mode === 'sign-in'
+    ? 'Sign in to continue your journey.'
+    : mode === 'sign-up'
+      ? 'Your saved sites and trust choices stay scoped to your account.'
+      : 'Enter your email and we will send you a secure reset link.'
+
   return (
     <div className="gatehouseAuthShell">
-      <form className="gatehouseAuthCard" onSubmit={event => void submit(event)}>
-        <div className="gatehouseAuthBrand">
-          <ParasyteMark size={26} />
-          <span>
-            PArAsYtE
-            <span className="gatehouseAuthBrandSuffix"> Browser</span>
-          </span>
-        </div>
-        <span className="gatehouseAuthEyebrow">A cleaner web, together</span>
-        <p className="gatehouseAuthTagline">
-          Nothing is kept unless you save it. Opens what you trust, keeps everything
-          else at arm's length in its own tab - no history, no pop-ups, no redirects
-          out of this tab.
-        </p>
+      <ParasyteScene className="gatehouseAuthScene" />
 
-        <label>
-          Email
+      <div className="gatehouseAuthCorner gatehouseAuthCornerTopLeft" aria-hidden="true">
+        <span>EXPLORE</span>
+        <span>CREATE</span>
+        <span>BELONG</span>
+      </div>
+      <div className="gatehouseAuthCorner gatehouseAuthCornerTopRight" aria-hidden="true">
+        <span>PEOPLE</span>
+        <span>IDEAS</span>
+        <span>A BRIGHTER WEB</span>
+      </div>
+
+      <form className="gatehouseAuthCard" onSubmit={event => void submit(event)}>
+        <div className="gatehouseAuthBrandBlock">
+          <div className="gatehouseAuthLogoHalo">
+            <ParasyteMark size={86} />
+          </div>
+          <div className="gatehouseAuthBrand">
+            <span>PArAsYtE</span>
+            <span className="gatehouseAuthBrandSuffix"> Browser</span>
+          </div>
+          <span className="gatehouseAuthEyebrow">A CLEANER WEB TOGETHER</span>
+        </div>
+
+        <div className="gatehouseAuthIntro">
+          <h1>{heading}</h1>
+          <p>{intro}</p>
+        </div>
+
+        <div className="gatehouseAuthField">
+          <Mail size={20} aria-hidden="true" />
           <input
+            id="gatehouse-email"
             type="email"
             required
             autoComplete="email"
+            aria-label="Email address"
+            placeholder="Email or username"
             value={email}
             onChange={event => setEmail(event.target.value)}
           />
-        </label>
+        </div>
 
         {mode !== 'forgot-password' && (
-          <label>
-            Password
+          <div className="gatehouseAuthField">
+            <LockKeyhole size={20} aria-hidden="true" />
             <input
-              type="password"
+              id="gatehouse-password"
+              type={showPassword ? 'text' : 'password'}
               required
               minLength={8}
               autoComplete={mode === 'sign-in' ? 'current-password' : 'new-password'}
+              aria-label="Password"
+              placeholder="Password"
               value={password}
               onChange={event => setPassword(event.target.value)}
             />
-          </label>
-        )}
+            <button
+              type="button"
+              className="gatehousePasswordToggle"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              title={showPassword ? 'Hide password' : 'Show password'}
+              onClick={() => setShowPassword(value => !value)}
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+        )
+}
 
         {mode === 'sign-in' && (
-          <button
-            type="button"
-            className="gatehouseAuthSwitch"
-            onClick={() => {
-              setMode('forgot-password')
-              setMessage('')
-            }}
-          >
-            Forgot password?
-          </button>
-        )}
+          <div className="gatehouseAuthUtilityRow">
+            <span className="gatehouseAuthRemember" title="Your account session remains signed in until you sign out.">
+              <span className="gatehouseAuthCheck">✓</span>
+              Remember me
+            </span>
+            <button
+              type="button"
+              className="gatehouseAuthSwitch gatehouseAuthForgot"
+              onClick={() => {
+                setMode('forgot-password')
+                setMessage('')
+              }}
+            >
+              Forgot password?
+            </button>
+          </div>
+        )
+}
 
-        <button type="submit" disabled={busy}>
-          {mode === 'sign-in' ? 'Sign in' : mode === 'sign-up' ? 'Create account' : 'Send reset link'}
+        <button className="gatehouseAuthPrimary" type="submit" disabled={busy}>
+          <span>
+            {mode === 'sign-in'
+              ? 'Sign In'
+              : mode === 'sign-up'
+                ? 'Create Account'
+                : 'Send Reset Link'}
+          </span>
+          <ArrowRight size={19} />
         </button>
 
         {message && <div className="gatehouseAuthMessage" role="status">{message}</div>}
 
+        {mode === 'sign-in' && (
+          <>
+            <div className="gatehouseAuthDivider" aria-hidden="true">
+              <span />
+              <b>or</b>
+              <span />
+            </div>
+            <button
+              type="button"
+              className="gatehouseAuthSecondary"
+              onClick={() => setMessage('SSO is not configured for this deployment yet.')}
+            >
+              <Building2 size={18} />
+              <span>Continue with SSO</span>
+            </button>
+          </>
+        )
+}
+
         <button
           type="button"
-          className="gatehouseAuthSwitch"
+          className="gatehouseAuthSwitch gatehouseAuthAccountSwitch"
           onClick={() => {
             setMode(mode === 'sign-up' ? 'sign-in' : mode === 'forgot-password' ? 'sign-in' : 'sign-up')
             setMessage('')
@@ -132,9 +219,25 @@ export default function AuthScreen() {
             ? 'Already have an account? Sign in'
             : mode === 'forgot-password'
               ? 'Back to sign in'
-              : "Don't have an account? Create one"}
+              : "Don't have an account? Create account"}
         </button>
+
+        <div className="gatehouseAuthFooter">
+          <ShieldCheck size={14} />
+          A FASTER · SAFER · BRIGHTER WEB
+        </div>
       </form>
+
+      <div className="gatehouseAuthCorner gatehouseAuthCornerBottomLeft" aria-hidden="true">
+        <span>BROWSE</span>
+        <span>WITHOUT</span>
+        <span>LIMITS</span>
+      </div>
+      <div className="gatehouseAuthCorner gatehouseAuthCornerBottomRight" aria-hidden="true">
+        <span>MORE PRIVACY</span>
+        <span>A BRIGHTER</span>
+        <span>TOMORROW</span>
+      </div>
     </div>
   )
 }
