@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "description": "PArAsYtE Browser - installable desktop shell (Electron)",
+  "author": "Biola (Sheriff) Lawal",
   "main": "main.cjs",
   "scripts": {
     "dev": "concurrently -k \"npm:dev:renderer\" \"npm:dev:electron\"",
@@ -33,13 +34,19 @@
     ],
     "mac": {
       "category": "public.app-category.productivity",
-      "target": ["dmg"]
+      "target": [
+        "dmg"
+      ]
     },
     "win": {
-      "target": ["nsis"]
+      "target": [
+        "nsis"
+      ]
     },
     "linux": {
-      "target": ["AppImage"],
+      "target": [
+        "AppImage"
+      ],
       "category": "Network"
     }
   }
