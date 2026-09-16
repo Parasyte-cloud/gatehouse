@@ -36,18 +36,21 @@
       "category": "public.app-category.productivity",
       "target": [
         "dmg"
-      ]
+      ],
+      "icon": "build/icon.icns"
     },
     "win": {
       "target": [
         "nsis"
-      ]
+      ],
+      "icon": "build/icon.ico"
     },
     "linux": {
       "target": [
         "AppImage"
       ],
-      "category": "Network"
+      "category": "Network",
+      "icon": "build/icon.png"
     }
   }
 }

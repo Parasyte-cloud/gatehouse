@@ -57,7 +57,53 @@ function createWindow() {
   return win
 }
 
+// A large chunk of the real web (GitHub, Google, most banks, many social
+// platforms) sends `X-Frame-Options` and/or a CSP `frame-ancestors`
+// directive specifically to refuse being loaded inside anyone else's
+// frame - that's a real, deliberate anti-clickjacking protection, and it
+// applies exactly as much inside this app's iframe as it would in a
+// random third-party website's iframe. The result the user actually sees
+// is a blank white pane where the site should be, with no error shown -
+// Chromium just silently refuses to render the response.
+//
+// This app *is* the "someone else's frame" every one of those sites is
+// defending against - but it's also the one frame the person using this
+// app explicitly asked to embed that exact site in (the whole product is
+// "browse inside an isolated sandbox you approved"). So for this desktop
+// shell specifically - not the plain web build, which runs as an actual
+// browser tab and has no way to touch response headers - we strip the
+// frame-blocking headers on the app's own subframe (iframe) responses
+// only, never on the shell's own top-level page. This doesn't touch the
+// embed-approval gate in the renderer at all: a site still only loads
+// here if the user approved it first. It just stops that already-approved
+// site from being blocked a second time by a header meant to stop a
+// stranger's page from doing exactly this without asking.
+function stripFrameBlockingHeaders(responseHeaders) {
+  const out = {}
+  for (const [key, values] of Object.entries(responseHeaders || {})) {
+    const lower = key.toLowerCase()
+    if (lower === 'x-frame-options') continue
+    if (lower === 'content-security-policy' || lower === 'content-security-policy-report-only') {
+      const stripped = values
+        .map((v) => v.split(';').filter((d) => !d.trim().toLowerCase().startsWith('frame-ancestors')).join(';'))
+        .filter((v) => v.trim().length > 0)
+      if (stripped.length > 0) out[key] = stripped
+      continue
+    }
+    out[key] = values
+  }
+  return out
+}
+
 app.whenReady().then(() => {
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    if (details.resourceType !== 'subFrame') {
+      callback({})
+      return
+    }
+    callback({ responseHeaders: stripFrameBlockingHeaders(details.responseHeaders) })
+  })
+
   // Mirrors the iframe build's `allow="camera 'none'; microphone 'none'; ..."`
   // permissions policy: nothing loaded anywhere in this app - the shell
   // itself or, later, a webview guest - can be granted camera, mic,
