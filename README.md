@@ -1,71 +1,87 @@
-# Gatehouse
+# PArAsYtE Browser
 
-Open what you trust. Everything else waits at the door.
+A privacy-oriented browser product with two delivery targets:
 
-Gatehouse is a standalone product, spun out of the hardening work done on
-RideArrivo's PArAsYtE Browser. Same core idea (deny-by-default iframe
-embedding, everything unapproved opens in its own tab, private-network
-destinations blocked including IPv4-in-IPv6 encodings) but built for outside
-users with their own accounts, not one company's intranet:
+- **Desktop:** the real browser client. React renders PArAsYtE's chrome while
+  Electron `WebContentsView` tabs render third-party web pages as top-level
+  Chromium content.
+- **Hosted web:** account/bookmark/trust experience and a limited safe iframe
+  fallback. A normal web application cannot replace a browser engine, so sites
+  that reject framing should be opened in the desktop client or system browser.
 
-- Every user has their own saved sites and their own trusted-origins list.
-  There's no shared admin-curated list - trust is per-user data, checked at
-  runtime, not a build-time env var. One user trusting an origin never makes
-  it embeddable for anyone else.
-- Auth is open sign-up (email + password via Supabase Auth), not gated to a
-  single email domain.
-- `src/lib/policy.ts` is the same tested policy engine (13/13 tests), just
-  with the RideArrivo-specific naming stripped out.
+The original repository/internal database names still use `gatehouse` to avoid
+unnecessary migration risk.
 
-## Why a separate Supabase project
+## Current desktop capabilities (v0.3)
 
-This must run on its own Supabase project, never RA-workspace's. RA-workspace
-holds RideArrivo's real internal data (HR records, KYC documents, payments,
-support cases). Mixing a public product's auth/session surface into that
-project would put unrelated blast radius on both sides. Two tables, both
-owner-scoped by RLS - see `supabase/migrations/0001_gatehouse_init.sql`:
+- native multi-tab browsing and new/close/switch/reopen-closed tab shortcuts
+- omnibox search/URL navigation, back/forward/reload
+- bookmarks and favorites
+- download activity with open/show-in-folder on desktop
+- Supabase email/password account auth
+- account-scoped trusted-origin/session choices for the hosted fallback
+- private/local literal-host blocking
+- ephemeral desktop browsing session by default
+- light/dark/system appearance, wallpapers, glow, window sizing and sidebar modes
+- native OS window controls only (no duplicate decorative traffic lights)
 
-- `gatehouse_sites` - each user's saved sites (replaces the old "managed
-  links + bookmarks" split with one list; `is_favorite` just pins something
-  to the top of the home screen)
-- `gatehouse_trusted_origins` - each user's personal embed-allowlist
+See `desktop/README.md`, `AUDIT_V4_2026-09-17.md` and
+`MOBILE_STRATEGY_2026-09-17.md` for architecture, audit findings and mobile
+planning.
 
-## Deploying
+## Root web development
 
-1. **Create a new Supabase project** (supabase.com/dashboard, or `supabase
-   projects create` from a terminal that's actually logged in - the CLI
-   config exists on this Mac but wasn't reachable from the sandboxed shell
-   used to build this). Note the project URL and anon key.
-2. Run the migration: paste `supabase/migrations/0001_gatehouse_init.sql`
-   into the SQL editor, or `supabase db push` if you link the CLI to the new
-   project.
-3. In Supabase Auth settings, decide whether to require email confirmation
-   for sign-up (recommended: on, so `signUp` results in "check your email"
-   rather than an instant session).
-4. Copy `.env.example` to `.env` and fill in `VITE_SUPABASE_URL` /
-   `VITE_SUPABASE_ANON_KEY` from step 1.
-5. `npm install && npm run dev` to test locally.
-6. Deploy: create a **new** Cloudflare Pages project for this repo (don't
-   reuse the `ra-workspace` Pages project - this is a different app with a
-   different build). Set the same two env vars in the Pages project's
-   environment variables. Build command `npm run build`, output directory
-   `dist`.
-7. Add the custom domain in that Pages project: `gatehouse.parasyte.cloud`.
-   Since `parasyte.cloud`'s DNS is already in Cloudflare, this is just
-   adding the custom domain in the Pages project settings and accepting the
-   CNAME record it proposes - no manual DNS record needed if the zone is on
-   Cloudflare and Pages manages it for you.
+```bash
+npm install
+npm test
+npm run build
+npm run dev
+```
 
-## Verified before delivery
+Environment variables are documented in `.env.example`. Do not commit real
+Supabase secrets.
 
-- `npm test` (the policy engine's own test suite): 13/13 pass, including the
-  IPv4-in-IPv6 private-network bypass regression tests.
-- `npx tsc -b`: clean, zero errors, strict mode with `noUnusedLocals`/
-  `noUnusedParameters`.
-- `npx vite build`: succeeds, produces a working production bundle.
+## Desktop development
 
-Not yet done, intentionally left for you: actually creating the Supabase
-project and Cloudflare Pages project (needs your accounts), and any product
-polish beyond the MVP (password reset flow, email templates, a real logo -
-this ships with text-only branding on purpose since it's still the
-"getting people used to it" phase under the parasyte.cloud subdomain).
+```bash
+cd desktop
+npm install
+npm run dev
+```
+
+The received desktop lockfile uses an obsolete Electron 33 release. Upgrade to
+a currently supported Electron line before public installer distribution; the
+audit notes contain the exact migration command used for this snapshot.
+
+## Supabase data
+
+The app uses its own Supabase project. Core owner-scoped tables are defined in
+`supabase/migrations/0001_gatehouse_init.sql`; profile/media setup is in the
+follow-up migration.
+
+Keep PArAsYtE separate from unrelated production systems so browser accounts
+and sessions do not expand the blast radius of another application.
+
+## Security boundaries
+
+- The desktop shell and guest tabs run without Node integration.
+- Guest permissions are denied by default.
+- Guest tabs use an in-memory Electron session partition unless a future
+  explicit persistent-container feature is chosen by the user.
+- Private/local literal hosts are blocked at policy and native request layers.
+- New windows are routed into controlled browser tabs.
+- PArAsYtE does not strip site security headers to force embedding.
+
+Literal-host blocking is not complete DNS-rebinding protection; see the audit
+for remaining hardening work.
+
+## Deployment
+
+The hosted build can be deployed to Cloudflare Pages with:
+
+- build command: `npm run build`
+- output directory: `dist`
+- environment: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
+
+Desktop packages are built separately from `desktop/` with electron-builder and
+must be signed/notarized before public distribution.

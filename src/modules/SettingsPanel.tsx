@@ -3,11 +3,15 @@ import type { ChangeEvent } from 'react'
 import {
   ImageIcon,
   LockKeyhole,
+  Monitor,
+  Moon,
   Palette,
+  PanelLeft,
   Puzzle,
   Rocket,
   ShieldCheck,
   Sparkles,
+  Sun,
   Trash2,
   UserRound,
   X
@@ -17,9 +21,11 @@ import { supabase } from '../lib/supabase'
 import {
   BROWSER_SIZES,
   GLOW_STRENGTHS,
+  SIDEBAR_MODES,
+  THEME_MODES,
   saveAppearance
 } from '../lib/appearance'
-import type { AppearancePreferences } from '../lib/appearance'
+import type { AppearancePreferences, WallpaperChoice } from '../lib/appearance'
 import '../gatehouse-settings.css'
 
 export type GatehouseProfile = {
@@ -37,7 +43,7 @@ type TrustedOrigin = {
 
 type SettingsTab = 'appearance' | 'profile' | 'privacy' | 'about'
 
-const WALLPAPER_PRESETS: { id: string; label: string; swatch: string }[] = [
+const WALLPAPER_PRESETS: { id: Exclude<WallpaperChoice, 'custom'>; label: string; swatch: string }[] = [
   { id: 'default', label: 'PArAsYtE scene', swatch: 'linear-gradient(135deg, #120c07, #06101b 55%, #03080e)' },
   { id: 'aurora-gold', label: 'Aurora gold', swatch: 'radial-gradient(circle at 30% 20%, #f2a62e, #06101b 65%)' },
   { id: 'aurora-blue', label: 'Aurora blue', swatch: 'radial-gradient(circle at 70% 20%, #2870d7, #030910 65%)' },
@@ -80,16 +86,37 @@ export default function SettingsPanel({
   const avatarInputRef = useRef<HTMLInputElement>(null)
   const wallpaperInputRef = useRef<HTMLInputElement>(null)
 
-  const currentWallpaperId = profile?.wallpaper_id || 'default'
+  const currentWallpaperId = appearance.wallpaper
 
   const applySize = useCallback((size: AppearancePreferences['size']) => {
     const next = { ...appearance, size }
     saveAppearance(next)
     onAppearanceChange(next)
+    // In the Electron build the browser-size setting also controls the real
+    // desktop window, not only the inner mock browser surface.
+    void window.electronAPI?.setBrowserSize?.(size)
   }, [appearance, onAppearanceChange])
 
   const applyGlow = useCallback((glow: AppearancePreferences['glow']) => {
     const next = { ...appearance, glow }
+    saveAppearance(next)
+    onAppearanceChange(next)
+  }, [appearance, onAppearanceChange])
+
+  const applyTheme = useCallback((theme: AppearancePreferences['theme']) => {
+    const next = { ...appearance, theme }
+    saveAppearance(next)
+    onAppearanceChange(next)
+  }, [appearance, onAppearanceChange])
+
+  const applySidebar = useCallback((sidebar: AppearancePreferences['sidebar']) => {
+    const next = { ...appearance, sidebar }
+    saveAppearance(next)
+    onAppearanceChange(next)
+  }, [appearance, onAppearanceChange])
+
+  const applyWallpaper = useCallback((wallpaper: WallpaperChoice) => {
+    const next = { ...appearance, wallpaper }
     saveAppearance(next)
     onAppearanceChange(next)
   }, [appearance, onAppearanceChange])
@@ -143,6 +170,7 @@ export default function SettingsPanel({
         setNotice('Profile picture updated.')
       } else {
         await upsertProfile({ wallpaper_id: 'custom', wallpaper_url: publicUrl })
+        applyWallpaper('custom')
         setNotice('Wallpaper updated.')
       }
     } catch (error) {
@@ -154,7 +182,7 @@ export default function SettingsPanel({
     } finally {
       setBusy(null)
     }
-  }, [user.id, upsertProfile])
+  }, [user.id, upsertProfile, applyWallpaper])
 
   const handleAvatarPick = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -168,14 +196,12 @@ export default function SettingsPanel({
     if (file) void uploadImage(file, 'wallpaper')
   }
 
-  const choosePresetWallpaper = async (id: string) => {
-    setNotice('')
-    try {
-      await upsertProfile({ wallpaper_id: id, wallpaper_url: id === 'default' ? null : profile?.wallpaper_url ?? null })
-    } catch (error) {
-      console.error('PArAsYtE wallpaper preset save failed:', error)
-      setNotice('Could not save that wallpaper choice. Please try again.')
-    }
+  const choosePresetWallpaper = (id: WallpaperChoice) => {
+    // Preset wallpapers are device appearance. Keeping them local makes the
+    // control instant and independent of an optional Supabase profile table.
+    // Custom uploaded wallpapers remain account-backed below.
+    applyWallpaper(id)
+    setNotice('Wallpaper applied.')
   }
 
   const removeAvatar = async () => {
@@ -226,6 +252,27 @@ export default function SettingsPanel({
             {tab === 'appearance' && (
               <>
                 <section className="gatehouseSettingsSection">
+                  <h3>Colour mode</h3>
+                  <p>Choose dark glass, light glass, or follow your device.</p>
+                  <div className="gatehouseSwatchGrid gatehouseThemeGrid">
+                    {THEME_MODES.map(option => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        className={`gatehouseSwatchButton ${appearance.theme === option.value ? 'active' : ''}`}
+                        onClick={() => applyTheme(option.value)}
+                      >
+                        <span className={`gatehouseThemePreview gatehouseThemePreview-${option.value}`} aria-hidden="true">
+                          {option.value === 'system' ? <Monitor size={18} /> : option.value === 'light' ? <Sun size={18} /> : <Moon size={18} />}
+                        </span>
+                        <strong>{option.label}</strong>
+                        <span>{option.description}</span>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+
+                <section className="gatehouseSettingsSection">
                   <h3>Browser size</h3>
                   <p>How much room PArAsYtE's window chrome takes up.</p>
                   <div className="gatehouseSwatchGrid">
@@ -264,6 +311,25 @@ export default function SettingsPanel({
                 </section>
 
                 <section className="gatehouseSettingsSection">
+                  <h3><PanelLeft size={15} /> Sidebar</h3>
+                  <p>Brave-style sidebar visibility without sacrificing page space.</p>
+                  <div className="gatehouseSwatchGrid">
+                    {SIDEBAR_MODES.map(option => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        className={`gatehouseSwatchButton ${appearance.sidebar === option.value ? 'active' : ''}`}
+                        onClick={() => applySidebar(option.value)}
+                      >
+                        <span className={`gatehouseSidebarPreview gatehouseSidebarPreview-${option.value}`} aria-hidden="true" />
+                        <strong>{option.label}</strong>
+                        <span>{option.description}</span>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+
+                <section className="gatehouseSettingsSection">
                   <h3>Wallpaper</h3>
                   <p>The background behind your PArAsYtE home screen.</p>
                   <div className="gatehouseSwatchGrid">
@@ -272,7 +338,7 @@ export default function SettingsPanel({
                         key={preset.id}
                         type="button"
                         className={`gatehouseSwatchButton gatehouseWallpaperButton ${currentWallpaperId === preset.id ? 'active' : ''}`}
-                        onClick={() => void choosePresetWallpaper(preset.id)}
+                        onClick={() => choosePresetWallpaper(preset.id)}
                       >
                         <span className="gatehouseWallpaperSwatch" style={{ background: preset.swatch }} aria-hidden="true" />
                         <strong>{preset.label}</strong>
@@ -347,7 +413,7 @@ export default function SettingsPanel({
             {tab === 'privacy' && (
               <section className="gatehouseSettingsSection">
                 <h3>Approved origins</h3>
-                <p>Sites allowed to embed inside PArAsYtE. Remove one to stop it embedding.</p>
+                <p>Account-scoped trust choices used by the hosted web fallback. Native desktop tabs do not need iframe approval; the ·session flag means that origin may keep its own site session.</p>
                 {trustedOrigins.length === 0 ? (
                   <p className="gatehouseSettingsFinePrint">Nothing approved yet.</p>
                 ) : (
@@ -372,12 +438,12 @@ export default function SettingsPanel({
             {tab === 'about' && (
               <section className="gatehouseSettingsSection">
                 <h3><Sparkles size={15} /> PArAsYtE Browser</h3>
-                <p>Version 0.1 (desktop). A cleaner, sandboxed way to browse together.</p>
-                <h3><Puzzle size={15} /> On the roadmap</h3>
+                <p>Version 0.3 (desktop). Native Chromium tabs, real multi-tab browsing, bookmarks, downloads, light/dark/system modes, window sizing, adjustable glow, PArAsYtE safety controls and adaptive sidebar modes.</p>
+                <h3><Puzzle size={15} /> Next browser milestones</h3>
                 <p>
-                  Android and iOS builds, extension support, and sync across devices are being
-                  actively scoped - see the project roadmap doc for the full comparison against
-                  other browsers and current status.
+                  Vertical and grouped tabs, split view, explicit persistent containers, reader mode,
+                  translation, encrypted sync and carefully scoped extension support are next. Mobile
+                  clients are planned as native iOS and Android browser shells rather than iframe wrappers.
                 </p>
               </section>
             )}

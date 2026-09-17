@@ -349,3 +349,79 @@
     border-bottom: 1px solid rgba(255, 255, 255, 0.07);
   }
 }
+
+/* Appearance v2 previews */
+.gatehouseThemePreview,
+.gatehouseSidebarPreview {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 34px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.gatehouseThemePreview-system {
+  color: #e8eef7;
+  background: linear-gradient(90deg, #eff3f7 0 50%, #09111b 50% 100%);
+  text-shadow: 0 1px 3px rgba(0,0,0,.55);
+}
+.gatehouseThemePreview-light { color: #6c7785; background: linear-gradient(135deg, #fffaf1, #dceaf6); }
+.gatehouseThemePreview-dark { color: #c8d7e8; background: linear-gradient(135deg, #15100b, #071523); }
+
+.gatehouseSidebarPreview {
+  background: rgba(8,17,27,.82);
+}
+.gatehouseSidebarPreview::before,
+.gatehouseSidebarPreview::after {
+  content: "";
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  border-radius: 4px;
+}
+.gatehouseSidebarPreview::before { left: 5px; width: 26%; background: rgba(242,166,46,.28); border: 1px solid rgba(255,200,101,.22); }
+.gatehouseSidebarPreview::after { left: 36%; right: 5px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.08); }
+.gatehouseSidebarPreview-auto::before { width: 9%; }
+.gatehouseSidebarPreview-auto::after { left: 18%; }
+.gatehouseSidebarPreview-hidden::before { display: none; }
+.gatehouseSidebarPreview-hidden::after { left: 5px; }
+
+/* The settings preview now matches the visibly brighter real ring light. */
+.gatehouseGlowPreview-subtle {
+  box-shadow: -7px 0 18px 2px rgba(255,190,74,.58), 7px 0 20px 2px rgba(78,151,255,.58);
+}
+.gatehouseGlowPreview-medium {
+  box-shadow: -9px 0 27px 5px rgba(255,194,78,.78), 9px 0 30px 5px rgba(82,157,255,.78);
+}
+.gatehouseGlowPreview-high {
+  box-shadow: -12px 0 38px 8px rgba(255,202,94,.98), 12px 0 42px 8px rgba(92,168,255,.98);
+}
+
+:root[data-pt-effective-theme="light"] .gatehouseSettingsOverlay {
+  background: rgba(209, 219, 229, .54);
+}
+:root[data-pt-effective-theme="light"] .gatehouseSettingsPanel {
+  border-color: rgba(43,66,89,.2);
+  background:
+    linear-gradient(150deg, rgba(255,255,255,.76), transparent 34%),
+    rgba(247,250,253,.9);
+  color: #172432;
+  box-shadow: 0 28px 76px rgba(64,82,100,.2);
+}
+:root[data-pt-effective-theme="light"] .gatehouseSettingsHeader,
+:root[data-pt-effective-theme="light"] .gatehouseSettingsNav { border-color: rgba(43,66,89,.11); }
+:root[data-pt-effective-theme="light"] .gatehouseSettingsHeader button,
+:root[data-pt-effective-theme="light"] .gatehouseSwatchButton,
+:root[data-pt-effective-theme="light"] .gatehouseAvatarActions button {
+  border-color: rgba(43,66,89,.15);
+  background: rgba(255,255,255,.56);
+  color: #233344;
+}
+:root[data-pt-effective-theme="light"] .gatehouseSettingsNavItem { color: #627183; }
+:root[data-pt-effective-theme="light"] .gatehouseSettingsNavItem:hover { color: #1c2b39; background: rgba(255,255,255,.56); }
+:root[data-pt-effective-theme="light"] .gatehouseSwatchButton:hover { border-color: rgba(43,66,89,.28); }
+:root[data-pt-effective-theme="light"] .gatehouseSizePreview,
+:root[data-pt-effective-theme="light"] .gatehouseGlowPreview { background: #eef3f8; border-color: rgba(43,66,89,.16); }
+:root[data-pt-effective-theme="light"] .gatehouseSizePreview::after { border-color: rgba(43,66,89,.34); }

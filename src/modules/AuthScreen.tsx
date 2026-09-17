@@ -2,7 +2,6 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import {
   ArrowRight,
-  Building2,
   Eye,
   EyeOff,
   LockKeyhole,
@@ -157,9 +156,9 @@ export default function AuthScreen() {
 
         {mode === 'sign-in' && (
           <div className="gatehouseAuthUtilityRow">
-            <span className="gatehouseAuthRemember" title="Your account session remains signed in until you sign out.">
-              <span className="gatehouseAuthCheck">✓</span>
-              Remember me
+            <span className="gatehouseAuthRemember" title="Supabase securely persists this account session until you sign out.">
+              <ShieldCheck size={15} aria-hidden="true" />
+              Secure session
             </span>
             <button
               type="button"
@@ -187,25 +186,6 @@ export default function AuthScreen() {
         </button>
 
         {message && <div className="gatehouseAuthMessage" role="status">{message}</div>}
-
-        {mode === 'sign-in' && (
-          <>
-            <div className="gatehouseAuthDivider" aria-hidden="true">
-              <span />
-              <b>or</b>
-              <span />
-            </div>
-            <button
-              type="button"
-              className="gatehouseAuthSecondary"
-              onClick={() => setMessage('SSO is not configured for this deployment yet.')}
-            >
-              <Building2 size={18} />
-              <span>Continue with SSO</span>
-            </button>
-          </>
-        )
-}
 
         <button
           type="button"
