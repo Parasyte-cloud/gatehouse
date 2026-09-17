@@ -1,0 +1,351 @@
+/* PArAsYtE Settings panel - matches the glass/gold/blue chrome language in
+   gatehouse-browser.css. Kept in its own file so it's easy to diff/remove
+   independently of the core browser chrome. */
+
+.gatehouseSettingsOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(2, 6, 11, 0.62);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.gatehouseSettingsPanel {
+  width: min(880px, 100%);
+  height: min(640px, 100%);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--gh-border-strong, rgba(235, 243, 255, 0.28));
+  border-radius: var(--gh-radius, 20px);
+  background:
+    linear-gradient(150deg, rgba(255, 255, 255, 0.06), transparent 30%),
+    var(--gh-panel-strong, rgba(7, 13, 21, 0.92));
+  backdrop-filter: var(--gh-glass-blur, blur(26px) saturate(145%));
+  -webkit-backdrop-filter: var(--gh-glass-blur, blur(26px) saturate(145%));
+  box-shadow: var(--gh-shadow, 0 30px 90px rgba(0, 0, 0, 0.5));
+  color: var(--gh-text, #f6f8fb);
+}
+
+.gatehouseSettingsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.gatehouseSettingsHeader h2 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 15px;
+  letter-spacing: 0.01em;
+}
+
+.gatehouseSettingsHeader button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--gh-muted-strong, #bdc8d5);
+}
+
+.gatehouseSettingsHeader button:hover {
+  color: var(--gh-text, #f6f8fb);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.gatehouseSettingsBody {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+.gatehouseSettingsNav {
+  flex: 0 0 190px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 14px 10px;
+  border-right: 1px solid rgba(255, 255, 255, 0.07);
+  overflow-y: auto;
+}
+
+.gatehouseSettingsNavItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 11px;
+  border: none;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--gh-muted, #99a7b8);
+  font-size: 13px;
+  text-align: left;
+}
+
+.gatehouseSettingsNavItem:hover {
+  color: var(--gh-text, #f6f8fb);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.gatehouseSettingsNavItem.active {
+  color: var(--gh-gold-strong, #ffd06f);
+  background: var(--gh-gold-dim, rgba(242, 166, 46, 0.14));
+}
+
+.gatehouseSettingsContent {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 20px 24px 28px;
+}
+
+.gatehouseSettingsNotice {
+  margin-bottom: 16px;
+  padding: 9px 13px;
+  font-size: 12.5px;
+  color: #f9ddb0;
+  background: linear-gradient(90deg, rgba(242, 166, 46, 0.16), rgba(242, 166, 46, 0.07));
+  border: 1px solid rgba(255, 198, 91, 0.16);
+  border-radius: 10px;
+}
+
+.gatehouseSettingsSection {
+  margin-bottom: 26px;
+}
+
+.gatehouseSettingsSection h3 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 4px;
+  font-size: 14px;
+}
+
+.gatehouseSettingsSection > p {
+  margin: 0 0 12px;
+  font-size: 12.5px;
+  color: var(--gh-muted, #99a7b8);
+}
+
+.gatehouseSettingsFinePrint {
+  font-size: 11.5px;
+  color: var(--gh-muted, #99a7b8);
+}
+
+.gatehouseSwatchGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.gatehouseSwatchButton {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 11px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--gh-text, #f6f8fb);
+  text-align: left;
+}
+
+.gatehouseSwatchButton strong {
+  font-size: 12.5px;
+}
+
+.gatehouseSwatchButton span:not([aria-hidden]) {
+  font-size: 11px;
+  color: var(--gh-muted, #99a7b8);
+}
+
+.gatehouseSwatchButton:hover {
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.gatehouseSwatchButton.active {
+  border-color: var(--gh-gold-strong, #ffd06f);
+  background: var(--gh-gold-dim, rgba(242, 166, 46, 0.14));
+  box-shadow: 0 0 0 1px rgba(242, 166, 46, 0.35);
+}
+
+.gatehouseSizePreview {
+  display: block;
+  width: 100%;
+  height: 28px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  position: relative;
+}
+
+.gatehouseSizePreview::after {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border-radius: 4px;
+  border: 1px dashed rgba(255, 255, 255, 0.3);
+}
+
+.gatehouseSizePreview-compact::after { inset: 9px; }
+.gatehouseSizePreview-balanced::after { inset: 6px; }
+.gatehouseSizePreview-expanded::after { inset: 3px; }
+.gatehouseSizePreview-maximized::after { inset: 1px; }
+
+.gatehouseGlowPreview {
+  display: block;
+  width: 100%;
+  height: 28px;
+  border-radius: 7px;
+  background: #0a1119;
+}
+
+.gatehouseGlowPreview-off { box-shadow: none; }
+.gatehouseGlowPreview-subtle { box-shadow: -6px 0 14px rgba(242, 166, 46, 0.24), 6px 0 14px rgba(40, 112, 215, 0.24); }
+.gatehouseGlowPreview-medium { box-shadow: -8px 0 22px rgba(242, 166, 46, 0.42), 8px 0 22px rgba(40, 112, 215, 0.42); }
+.gatehouseGlowPreview-high { box-shadow: -10px 0 30px rgba(242, 166, 46, 0.65), 10px 0 30px rgba(40, 112, 215, 0.65); }
+
+.gatehouseWallpaperButton {
+  align-items: center;
+}
+
+.gatehouseWallpaperSwatch {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 52px;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--gh-muted-strong, #bdc8d5);
+}
+
+.gatehouseWallpaperSwatchUpload {
+  background: rgba(255, 255, 255, 0.04);
+  border-style: dashed;
+}
+
+.gatehouseAvatarRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.gatehouseAvatarPreview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  flex: none;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--gh-glass-soft, rgba(255, 255, 255, 0.055));
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: var(--gh-muted-strong, #bdc8d5);
+}
+
+.gatehouseAvatarPreview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.gatehouseAvatarActions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gatehouseAvatarActions button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 13px;
+  font-size: 12.5px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--gh-text, #f6f8fb);
+}
+
+.gatehouseAvatarActions button.secondary {
+  color: var(--gh-danger, #ff6e68);
+  border-color: rgba(255, 110, 104, 0.3);
+  background: rgba(255, 110, 104, 0.08);
+}
+
+.gatehouseSettingsOriginList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.gatehouseSettingsOriginList li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 11px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 12.5px;
+}
+
+.gatehouseSettingsOriginList li span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.gatehouseSettingsOriginList li em {
+  font-style: normal;
+  color: var(--gh-muted, #99a7b8);
+}
+
+.gatehouseSettingsOriginList li button {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 110, 104, 0.1);
+  color: var(--gh-danger, #ff6e68);
+}
+
+@media (max-width: 720px) {
+  .gatehouseSettingsBody {
+    flex-direction: column;
+  }
+  .gatehouseSettingsNav {
+    flex: none;
+    flex-direction: row;
+    overflow-x: auto;
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  }
+}

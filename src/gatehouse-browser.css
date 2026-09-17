@@ -66,7 +66,7 @@
 
 .gatehouseWindow {
   position: relative;
-  width: min(1540px, 100%);
+  width: min(var(--pt-window-max, 1540px), 100%);
   height: 100%;
   margin: 0 auto;
   display: flex;
@@ -81,9 +81,10 @@
   -webkit-backdrop-filter: blur(30px) saturate(150%);
   box-shadow:
     0 46px 120px rgba(0, 0, 0, 0.55),
-    -2px 0 35px rgba(242, 166, 46, 0.14),
-    2px 0 38px rgba(40, 112, 215, 0.15),
+    -2px 0 var(--pt-glow-blur-gold, 35px) rgba(242, 166, 46, var(--pt-glow-alpha-gold, 0.14)),
+    2px 0 var(--pt-glow-blur-blue, 38px) rgba(40, 112, 215, var(--pt-glow-alpha-blue, 0.15)),
     inset 0 1px 0 rgba(255, 255, 255, 0.11);
+  transition: width 0.25s ease, box-shadow 0.25s ease;
 }
 
 .gatehouseWindow::before {
@@ -1946,4 +1947,60 @@
     grid-template-columns: 1fr;
     gap: 9px;
   }
+}
+
+/* ---------- Settings: browser size, outer glow, wallpaper, avatar ----------
+   Driven by data-pt-size / data-pt-glow (set on <html> by src/lib/appearance.ts)
+   and data-pt-wallpaper (set on .gatehouseHome by GatehouseBrowser.tsx). The
+   --pt-window-max / --pt-glow-* variables are consumed by .gatehouseWindow's
+   width and box-shadow above; defaults there match the pre-Settings look
+   exactly, so an account that has never opened Settings is unaffected. */
+
+:root[data-pt-size="compact"] { --pt-window-max: 1280px; }
+:root[data-pt-size="balanced"] { --pt-window-max: 1540px; }
+:root[data-pt-size="expanded"] { --pt-window-max: 1760px; }
+:root[data-pt-size="maximized"] { --pt-window-max: 2400px; }
+
+:root[data-pt-glow="off"] {
+  --pt-glow-alpha-gold: 0;
+  --pt-glow-alpha-blue: 0;
+}
+:root[data-pt-glow="subtle"] {
+  --pt-glow-alpha-gold: 0.14;
+  --pt-glow-alpha-blue: 0.15;
+  --pt-glow-blur-gold: 35px;
+  --pt-glow-blur-blue: 38px;
+}
+:root[data-pt-glow="medium"] {
+  --pt-glow-alpha-gold: 0.3;
+  --pt-glow-alpha-blue: 0.32;
+  --pt-glow-blur-gold: 58px;
+  --pt-glow-blur-blue: 62px;
+}
+:root[data-pt-glow="high"] {
+  --pt-glow-alpha-gold: 0.5;
+  --pt-glow-alpha-blue: 0.54;
+  --pt-glow-blur-gold: 90px;
+  --pt-glow-blur-blue: 100px;
+}
+
+.gatehouseHome[data-pt-wallpaper="aurora-gold"] {
+  background: radial-gradient(circle at 30% 15%, rgba(242, 166, 46, 0.22), transparent 45%);
+}
+.gatehouseHome[data-pt-wallpaper="aurora-blue"] {
+  background: radial-gradient(circle at 70% 15%, rgba(40, 112, 215, 0.24), transparent 45%);
+}
+.gatehouseHome[data-pt-wallpaper="midnight"] {
+  background: linear-gradient(165deg, rgba(3, 6, 8, 0.9), rgba(11, 20, 36, 0.6) 60%, rgba(0, 0, 0, 0.92));
+}
+.gatehouseHome[data-pt-wallpaper="sandstone"] {
+  background: linear-gradient(165deg, rgba(58, 44, 26, 0.55), rgba(23, 16, 9, 0.85) 70%);
+}
+
+.gatehouseAccountAvatar {
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: none;
 }

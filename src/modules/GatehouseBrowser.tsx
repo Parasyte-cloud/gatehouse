@@ -45,6 +45,10 @@ import {
   resolveGatehouseInput,
   safeWebUrl
 } from '../lib/policy'
+import { readAppearance } from '../lib/appearance'
+import type { AppearancePreferences } from '../lib/appearance'
+import SettingsPanel from './SettingsPanel'
+import type { GatehouseProfile } from './SettingsPanel'
 import '../gatehouse.css'
 import '../gatehouse-browser.css'
 
@@ -97,6 +101,9 @@ export default function GatehouseBrowser({ user }: { user: User }) {
   const [trustedOrigins, setTrustedOrigins] = useState<TrustedOrigin[]>([])
   const [message, setMessage] = useState('')
   const [frameStatus, setFrameStatus] = useState<FrameStatus>('idle')
+  const [profile, setProfile] = useState<GatehouseProfile | null>(null)
+  const [appearance, setAppearance] = useState<AppearancePreferences>(() => readAppearance())
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const addressRef = useRef<HTMLInputElement>(null)
   const mountedRef = useRef(true)
 
@@ -190,6 +197,36 @@ export default function GatehouseBrowser({ user }: { user: User }) {
   useEffect(() => {
     void loadData()
   }, [loadData])
+
+  // Kept separate from loadData's Promise.all on purpose: gatehouse_profiles
+  // is a newer, optional table (see supabase/migrations/0002). Until an
+  // account has run that migration and someone has visited Settings once,
+  // this table may not exist yet - that must never surface as the generic
+  // "Unable to load your PArAsYtE data" error that a failed sites/origins
+  // load shows, so a missing-table error here is swallowed and just logged.
+  useEffect(() => {
+    const client = supabase
+    if (!client) return
+    let cancelled = false
+
+    void client
+      .from('gatehouse_profiles')
+      .select('display_name,avatar_url,wallpaper_id,wallpaper_url')
+      .eq('user_id', user.id)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (cancelled) return
+        if (error) {
+          console.warn('PArAsYtE profile load skipped:', error.message)
+          return
+        }
+        if (data) setProfile(data as GatehouseProfile)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [user.id])
 
   const navigate = useCallback((value: string, push = true) => {
     const resolved = value === GATEHOUSE_HOME ? GATEHOUSE_HOME : resolveGatehouseInput(value)
@@ -450,7 +487,9 @@ export default function GatehouseBrowser({ user }: { user: User }) {
 
           <div className="gatehouseTitleActions">
             <span className="gatehouseAccountPill" title={user.email || 'Signed in'}>
-              <UserRound size={15} />
+              {profile?.avatar_url
+                ? <img className="gatehouseAccountAvatar" src={profile.avatar_url} alt="" />
+                : <UserRound size={15} />}
               <span>{user.email || 'Account'}</span>
             </span>
             <button type="button" onClick={signOut} title="Sign out" aria-label="Sign out">
@@ -579,7 +618,7 @@ export default function GatehouseBrowser({ user }: { user: User }) {
               <button
                 type="button"
                 className="gatehouseSideNavItem"
-                onClick={() => setMessage(`${trustedOrigins.length} approved origin${trustedOrigins.length === 1 ? '' : 's'} stored for this account.`)}
+                onClick={() => setSettingsOpen(true)}
               >
                 <span className="gatehouseSideNavIcon"><Settings size={19} /></span>
                 <span>Settings</span>
@@ -656,7 +695,15 @@ export default function GatehouseBrowser({ user }: { user: User }) {
 
           <main className="gatehouseViewport">
             {currentPolicy.kind === 'home' ? (
-              <div className="gatehouseHome">
+              <div
+                className="gatehouseHome"
+                data-pt-wallpaper={profile?.wallpaper_id || 'default'}
+                style={
+                  profile?.wallpaper_id === 'custom' && profile.wallpaper_url
+                    ? { backgroundImage: `url(${profile.wallpaper_url})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                    : undefined
+                }
+              >
                 <ParasyteScene className="gatehouseHomeScene" />
                 <div className="gatehouseHomeMotto gatehouseHomeMottoRight" aria-hidden="true">
                   <span>PEOPLE</span>
@@ -862,6 +909,19 @@ export default function GatehouseBrowser({ user }: { user: User }) {
             )}
           </main>
         </div>
+
+        {settingsOpen && (
+          <SettingsPanel
+            user={user}
+            appearance={appearance}
+            profile={profile}
+            trustedOrigins={trustedOrigins}
+            onUntrustOrigin={(originId) => void untrustOrigin(originId)}
+            onAppearanceChange={setAppearance}
+            onProfileChange={setProfile}
+            onClose={() => setSettingsOpen(false)}
+          />
+        )}
       </div>
     </section>
   )
