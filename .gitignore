@@ -4,3 +4,7 @@ dist-preview
 .env
 .env.local
 *.tsbuildinfo
+
+# macOS
+.DS_Store
+**/.DS_Store
