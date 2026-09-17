@@ -21,7 +21,6 @@ import {
   LockKeyhole,
   LogOut,
   Plus,
-  Puzzle,
   RefreshCw,
   Search,
   Settings,
@@ -31,6 +30,7 @@ import {
   Star,
   Trash2,
   UserRound,
+  X,
   Youtube
 } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
@@ -104,6 +104,7 @@ export default function GatehouseBrowser({ user }: { user: User }) {
   const [profile, setProfile] = useState<GatehouseProfile | null>(null)
   const [appearance, setAppearance] = useState<AppearancePreferences>(() => readAppearance())
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [shieldOpen, setShieldOpen] = useState(false)
   const addressRef = useRef<HTMLInputElement>(null)
   const mountedRef = useRef(true)
 
@@ -228,12 +229,21 @@ export default function GatehouseBrowser({ user }: { user: User }) {
     }
   }, [user.id])
 
+
+  // Keep the native Electron window in sync with Settings > Browser size.
+  // The web build has no electronAPI, so the same preference falls back to
+  // the responsive CSS shell sizing only.
+  useEffect(() => {
+    void window.electronAPI?.setBrowserSize?.(appearance.size)
+  }, [appearance.size])
+
   const navigate = useCallback((value: string, push = true) => {
     const resolved = value === GATEHOUSE_HOME ? GATEHOUSE_HOME : resolveGatehouseInput(value)
 
     setCurrent(resolved)
     setAddress(displayAddress(resolved))
     setMessage('')
+    setShieldOpen(false)
 
     if (!push) {
       return
@@ -420,11 +430,29 @@ export default function GatehouseBrowser({ user }: { user: User }) {
     }
   }
 
+  const handleWindowControl = async (action: 'minimize' | 'toggle-maximize' | 'close') => {
+    if (!window.electronAPI) {
+      setMessage('Native window controls are available in the installed PArAsYtE desktop app.')
+      return
+    }
+    try {
+      await window.electronAPI.windowControl(action)
+    } catch (error) {
+      console.error('PArAsYtE window control failed:', error)
+      setMessage('That window action could not be completed.')
+    }
+  }
+
   const signOut = () => {
     void supabase?.auth.signOut()
   }
 
   const favorites = useMemo(() => sites.filter(site => site.is_favorite), [sites])
+  const currentTrustedOrigin = useMemo(() => {
+    const parsed = safeWebUrl(current)
+    if (!parsed) return null
+    return trustedOrigins.find(origin => origin.origin === parsed.origin) || null
+  }, [current, trustedOrigins])
 
   const securityTitle = currentPolicy.kind === 'home'
     ? 'PArAsYtE home'
@@ -442,10 +470,10 @@ export default function GatehouseBrowser({ user }: { user: User }) {
 
       <div className="gatehouseWindow">
         <header className="gatehouseTitlebar">
-          <div className="gatehouseWindowDots" aria-hidden="true">
-            <span />
-            <span />
-            <span />
+          <div className="gatehouseWindowDots" aria-label="Window controls">
+            <button type="button" className="gatehouseWindowDotClose" onClick={() => void handleWindowControl('close')} title="Close window" aria-label="Close window" />
+            <button type="button" className="gatehouseWindowDotMinimize" onClick={() => void handleWindowControl('minimize')} title="Minimize window" aria-label="Minimize window" />
+            <button type="button" className="gatehouseWindowDotMaximize" onClick={() => void handleWindowControl('toggle-maximize')} title="Maximize or restore window" aria-label="Maximize or restore window" />
           </div>
 
           <button type="button" className="gatehouseBrand" onClick={goHome} title="PArAsYtE home">
@@ -523,26 +551,69 @@ export default function GatehouseBrowser({ user }: { user: User }) {
             </button>
           </div>
 
-          <form className="gatehouseOmnibox" onSubmit={submit}>
-            <span className={`gatehouseSecurityIcon ${currentPolicy.kind}`} title={securityTitle}>
-              {currentPolicy.kind === 'blocked' || !currentPolicy.secure
-                ? <ShieldAlert size={15} />
-                : <ShieldCheck size={15} />}
-            </span>
-            <input
-              ref={addressRef}
-              value={address}
-              placeholder="Search or enter a URL"
-              aria-label="Search or enter a web address"
-              autoCapitalize="none"
-              autoCorrect="off"
-              spellCheck={false}
-              onChange={(event: ChangeEvent<HTMLInputElement>) => setAddress(event.target.value)}
-            />
-            <button type="submit" title="Go" aria-label="Go">
-              <Search size={16} />
-            </button>
-          </form>
+          <div className="gatehouseOmniboxWrap">
+            <form className="gatehouseOmnibox" onSubmit={submit}>
+              <button
+                type="button"
+                className={`gatehouseSecurityButton gatehouseSecurityIcon ${currentPolicy.kind}`}
+                title={`${securityTitle} · Open PArAsYtE Shields`}
+                aria-label="Open PArAsYtE Shields"
+                aria-expanded={shieldOpen}
+                onClick={() => setShieldOpen(open => !open)}
+              >
+                {currentPolicy.kind === 'blocked' || !currentPolicy.secure
+                  ? <ShieldAlert size={15} />
+                  : <ShieldCheck size={15} />}
+              </button>
+              <input
+                ref={addressRef}
+                value={address}
+                placeholder="Search or enter a URL"
+                aria-label="Search or enter a web address"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                onChange={(event: ChangeEvent<HTMLInputElement>) => setAddress(event.target.value)}
+              />
+              <button type="submit" title="Go" aria-label="Go">
+                <Search size={16} />
+              </button>
+            </form>
+
+            {shieldOpen && (
+              <div className="gatehouseShieldPanel" role="dialog" aria-label="PArAsYtE Shields">
+                <div className="gatehouseShieldHeader">
+                  <span className={`gatehouseShieldBadge ${currentPolicy.kind}`}>
+                    {currentPolicy.kind === 'blocked' ? <ShieldAlert size={18} /> : <ShieldCheck size={18} />}
+                  </span>
+                  <div>
+                    <strong>PArAsYtE Shields</strong>
+                    <span>{currentPolicy.kind === 'home' ? 'Private new tab' : currentPolicy.hostname || 'Protected destination'}</span>
+                  </div>
+                </div>
+                <p>{currentPolicy.reason}</p>
+                <ul className="gatehouseShieldFacts">
+                  <li><ShieldCheck size={13} /> Browsing history stays in memory only.</li>
+                  <li><ShieldCheck size={13} /> Pop-ups and parent-tab redirects are blocked.</li>
+                  <li><ShieldCheck size={13} /> Camera, microphone, location, payment and device APIs are denied.</li>
+                  {currentPolicy.kind === 'embed' && (
+                    <li><LockKeyhole size={13} /> {currentPolicy.allowSameOrigin ? 'This approved origin may keep its own signed-in session.' : 'This origin is isolated from persistent site storage.'}</li>
+                  )}
+                </ul>
+                <div className="gatehouseShieldActions">
+                  {currentPolicy.kind === 'external' && currentPolicy.secure && (
+                    <button type="button" onClick={() => void trustCurrentOrigin()}><Plus size={13} /> Approve origin</button>
+                  )}
+                  {currentPolicy.kind === 'embed' && !currentPolicy.allowSameOrigin && (
+                    <button type="button" onClick={() => void trustCurrentOrigin(true)}><LockKeyhole size={13} /> Remember session</button>
+                  )}
+                  {currentTrustedOrigin && (
+                    <button type="button" className="secondary" onClick={() => void untrustOrigin(currentTrustedOrigin.id)}><Trash2 size={13} /> Remove approval</button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
 
           <div className="gatehouseActions">
             <button
@@ -574,7 +645,20 @@ export default function GatehouseBrowser({ user }: { user: User }) {
           <span>{currentPolicy.reason}</span>
         </div>
 
-        {message && <div className="moduleNotice" role="status">{message}</div>}
+        {message && (
+          <div className="moduleNotice" role="status">
+            <span>{message}</span>
+            <button
+              type="button"
+              className="moduleNoticeDismiss"
+              onClick={() => setMessage('')}
+              title="Dismiss notification"
+              aria-label="Dismiss notification"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        )}
 
         <div className="gatehouseBody">
           <aside className="gatehouseSidebar">
@@ -606,14 +690,6 @@ export default function GatehouseBrowser({ user }: { user: User }) {
               >
                 <span className="gatehouseSideNavIcon"><Download size={19} /></span>
                 <span>Downloads</span>
-              </button>
-              <button
-                type="button"
-                className="gatehouseSideNavItem"
-                onClick={() => setMessage('Extension support is not enabled in this browser shell.')}
-              >
-                <span className="gatehouseSideNavIcon"><Puzzle size={19} /></span>
-                <span>Extensions</span>
               </button>
               <button
                 type="button"
@@ -697,9 +773,9 @@ export default function GatehouseBrowser({ user }: { user: User }) {
             {currentPolicy.kind === 'home' ? (
               <div
                 className="gatehouseHome"
-                data-pt-wallpaper={profile?.wallpaper_id || 'default'}
+                data-pt-wallpaper={appearance.wallpaper === 'custom' && !profile?.wallpaper_url ? 'default' : appearance.wallpaper}
                 style={
-                  profile?.wallpaper_id === 'custom' && profile.wallpaper_url
+                  appearance.wallpaper === 'custom' && profile?.wallpaper_url
                     ? { backgroundImage: `url(${profile.wallpaper_url})`, backgroundSize: 'cover', backgroundPosition: 'center' }
                     : undefined
                 }

@@ -97,11 +97,37 @@ code {
 .moduleNotice {
   position: relative;
   z-index: 6;
-  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 34px;
+  padding: 7px 12px 7px 16px;
   font-size: 12px;
   color: #f9ddb0;
   background: linear-gradient(90deg, rgba(242, 166, 46, 0.16), rgba(242, 166, 46, 0.07));
   border-bottom: 1px solid rgba(255, 198, 91, 0.16);
+}
+
+.moduleNoticeDismiss {
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: currentColor;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  opacity: 0.72;
+}
+
+.moduleNoticeDismiss:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 .gatehouseLoading {
@@ -699,3 +725,120 @@ code {
     animation-iteration-count: 1 !important;
   }
 }
+
+/* ========================================================================
+   Appearance v2: real light/dark/system colour modes
+   ======================================================================== */
+
+:root[data-pt-effective-theme="dark"] {
+  color-scheme: dark;
+}
+
+:root[data-pt-effective-theme="light"] {
+  color-scheme: light;
+  --gh-bg: #e8eef5;
+  --gh-bg-soft: #f4f7fb;
+  --gh-panel: rgba(248, 251, 255, 0.72);
+  --gh-panel-strong: rgba(250, 252, 255, 0.9);
+  --gh-glass: rgba(255, 255, 255, 0.64);
+  --gh-glass-soft: rgba(255, 255, 255, 0.58);
+  --gh-border: rgba(33, 55, 78, 0.14);
+  --gh-border-strong: rgba(33, 55, 78, 0.24);
+  --gh-text: #15202c;
+  --gh-muted: #617083;
+  --gh-muted-strong: #3e4d5f;
+  --gh-silver: #6f7d8e;
+  --gh-shadow: 0 30px 80px rgba(55, 76, 99, 0.2);
+}
+
+:root[data-pt-effective-theme="light"] body {
+  background:
+    radial-gradient(circle at 18% 15%, rgba(242, 166, 46, 0.18), transparent 34%),
+    radial-gradient(circle at 82% 12%, rgba(40, 112, 215, 0.16), transparent 38%),
+    linear-gradient(145deg, #f7f4ed 0%, #edf3f9 50%, #dfe9f4 100%);
+  color: var(--gh-text);
+}
+
+:root[data-pt-effective-theme="light"] input::placeholder {
+  color: rgba(73, 88, 105, 0.55);
+}
+
+:root[data-pt-effective-theme="light"] code {
+  color: #263646;
+  background: rgba(255, 255, 255, 0.62);
+  border-color: rgba(33, 55, 78, 0.14);
+}
+
+:root[data-pt-effective-theme="light"] .moduleNotice,
+:root[data-pt-effective-theme="light"] .gatehouseSettingsNotice {
+  color: #7a4a04;
+}
+
+:root[data-pt-effective-theme="light"] .parasyteScene {
+  background:
+    radial-gradient(circle at 17% 54%, rgba(244, 173, 73, 0.25), transparent 24%),
+    radial-gradient(circle at 81% 38%, rgba(87, 153, 231, 0.2), transparent 34%),
+    linear-gradient(118deg, #f5efe5 0%, #edf3f8 42%, #dbe8f4 70%, #cfddea 100%);
+}
+
+:root[data-pt-effective-theme="light"] .parasyteSceneStars { opacity: 0.08; }
+:root[data-pt-effective-theme="light"] .parasyteScenePlanet {
+  border-color: rgba(61, 122, 194, 0.24);
+  background:
+    radial-gradient(circle at 28% 27%, rgba(125, 177, 233, 0.34), transparent 24%),
+    radial-gradient(circle at 46% 45%, rgba(177, 205, 232, 0.8), rgba(205, 220, 235, 0.9) 67%);
+  box-shadow: -10px 20px 90px rgba(39, 109, 205, 0.2), inset 40px 0 90px rgba(255,255,255,.45);
+}
+:root[data-pt-effective-theme="light"] .parasyteSceneMountainLeft {
+  background: linear-gradient(145deg, rgba(105, 111, 117, .82), rgba(51, 61, 72, .9) 67%);
+}
+:root[data-pt-effective-theme="light"] .parasyteSceneMountainLeftBack { background: #9aa6b2; }
+:root[data-pt-effective-theme="light"] .parasyteSceneMountainRight {
+  background: linear-gradient(220deg, rgba(78, 103, 126, .88), rgba(43, 58, 72, .94) 70%);
+}
+:root[data-pt-effective-theme="light"] .parasyteSceneMountainRightBack { background: #8da5bb; }
+:root[data-pt-effective-theme="light"] .parasyteSceneWater {
+  background:
+    repeating-linear-gradient(176deg, rgba(255,255,255,.09) 0 1px, transparent 1px 8px),
+    radial-gradient(ellipse at 16% 4%, rgba(243, 151, 38, .2), transparent 30%),
+    radial-gradient(ellipse at 82% 0%, rgba(48, 119, 213, .18), transparent 34%),
+    linear-gradient(180deg, rgba(199, 218, 235, .86), rgba(166, 193, 218, .96));
+}
+
+/* Authentication follows the same light/dark preference once a user has
+   chosen it on this device. */
+:root[data-pt-effective-theme="light"] .gatehouseAuthShell {
+  background: #e8eef5;
+}
+:root[data-pt-effective-theme="light"] .gatehouseAuthCard {
+  border-color: rgba(47, 70, 94, .22);
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.8), rgba(255,255,255,.34) 34%, rgba(209,228,245,.24) 76%),
+    rgba(247,250,253,.78);
+  box-shadow:
+    0 42px 92px rgba(67,83,101,.2),
+    -12px 0 42px rgba(246,163,35,.25),
+    12px 0 46px rgba(51,128,230,.23),
+    inset 0 1px 0 rgba(255,255,255,.94);
+}
+:root[data-pt-effective-theme="light"] .gatehouseAuthBrand,
+:root[data-pt-effective-theme="light"] .gatehouseAuthIntro h1 { color: #172534; }
+:root[data-pt-effective-theme="light"] .gatehouseAuthBrandSuffix,
+:root[data-pt-effective-theme="light"] .gatehouseAuthIntro p,
+:root[data-pt-effective-theme="light"] .gatehouseFieldLabel,
+:root[data-pt-effective-theme="light"] .gatehouseAuthRemember,
+:root[data-pt-effective-theme="light"] .gatehouseAuthAccountSwitch,
+:root[data-pt-effective-theme="light"] .gatehouseAuthEyebrow { color: #5d6d7e; }
+:root[data-pt-effective-theme="light"] .gatehouseAuthField,
+:root[data-pt-effective-theme="light"] .gatehouseAuthSecondary {
+  border-color: rgba(45,69,94,.18);
+  background: rgba(255,255,255,.62);
+  color: #293a4a;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.96), 0 10px 24px rgba(65,84,103,.08);
+}
+:root[data-pt-effective-theme="light"] .gatehouseAuthField input { color: #1e2d3b; }
+:root[data-pt-effective-theme="light"] .gatehousePasswordToggle { color: #68788a; }
+:root[data-pt-effective-theme="light"] .gatehousePasswordToggle:hover { color: #233446; background: rgba(45,69,94,.06); }
+:root[data-pt-effective-theme="light"] .gatehouseAuthDivider span { background: rgba(44,68,91,.14); }
+:root[data-pt-effective-theme="light"] .gatehouseAuthDivider b,
+:root[data-pt-effective-theme="light"] .gatehouseAuthSecondary { color: #495a6d; }
