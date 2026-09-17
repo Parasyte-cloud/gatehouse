@@ -1422,7 +1422,14 @@
 }
 
 .gatehouseWindow {
-  width: min(1500px, 100%);
+  /* This block is the later "high-fidelity concept pass" and wins the
+     cascade over the earlier .gatehouseWindow rule (same selector,
+     declared later in this file) - so it must read the same --pt-window-max
+     / --pt-glow-* variables Settings > Appearance writes, with fallbacks
+     matching this pass's own pre-Settings look, or browser size/outer glow
+     silently do nothing (the values still get applied to the DOM
+     attribute and the earlier rule, they just never render). */
+  width: min(var(--pt-window-max, 1500px), 100%);
   border-color: rgba(224, 237, 255, .33);
   border-radius: 28px;
   background:
@@ -1432,9 +1439,10 @@
   -webkit-backdrop-filter: blur(28px) saturate(150%);
   box-shadow:
     0 50px 125px rgba(0,0,0,.55),
-    -2px 0 38px rgba(242,166,46,.22),
-    2px 0 42px rgba(45,121,222,.23),
+    -2px 0 var(--pt-glow-blur-gold, 38px) rgba(242,166,46, var(--pt-glow-alpha-gold, .22)),
+    2px 0 var(--pt-glow-blur-blue, 42px) rgba(45,121,222, var(--pt-glow-alpha-blue, .23)),
     inset 0 1px 0 rgba(255,255,255,.14);
+  transition: width 0.25s ease, box-shadow 0.25s ease;
 }
 
 .gatehouseTitlebar {
